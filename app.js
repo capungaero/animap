@@ -590,6 +590,8 @@ async function recordAnimation() {
             // Capture the entire #map div
             const canvas = await html2canvas(mapContainer, {
                 useCORS: true,
+                allowTaint: true, // Allow cross-origin images to be drawn
+                backgroundColor: '#f0f0f0', // Set a fallback background color
                 logging: false,
                 scale: 1, // Capture at native resolution
             });
