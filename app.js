@@ -509,50 +509,39 @@ function handleRecordClick() {
         showStatus('Please generate a route first', 'error');
         return;
     }
-    // The startRecording function will now handle all logic
     startRecording();
 }
 
 async function startRecording() {
+    if (isRecording) return; // Prevent multiple recordings
+
+    isRecording = true;
+    recordedBlobs = [];
+    
+    // Update UI to 'recording' state
     const recordBtn = document.getElementById('recordBtn');
     const animateBtn = document.getElementById('animateBtn');
     const exportBtn = document.getElementById('downloadBtn');
     const recordingIndicator = document.getElementById('recordingIndicator');
 
-    if (isRecording) {
-        console.log("Recording is already in progress.");
-        return;
-    }
-
-    // --- Start Recording ---
-    isRecording = true;
-    recordedBlobs = [];
-    
-    // Update UI to 'recording' state
     recordBtn.textContent = 'Recording...';
     recordBtn.disabled = true;
     animateBtn.disabled = true;
     exportBtn.disabled = true;
     recordingIndicator.classList.add('active');
+    
     showStatus('Recording akan dimulai...', 'info');
     console.log('Recording sequence initiated');
 
     try {
         await recordAnimation();
-        // If successful, enable download button
-        exportBtn.disabled = false;
+        // On success, show the download dialog
         showDownloadDialog();
     } catch (error) {
         console.error('Recording error:', error);
         showStatus('Recording error: ' + error.message, 'error');
-    } finally {
-        // --- Reset UI State ---
-        isRecording = false;
-        recordBtn.textContent = 'Rekam Animasi';
-        recordBtn.disabled = false;
-        animateBtn.disabled = false;
-        recordingIndicator.classList.remove('active');
-        console.log("UI has been reset to idle state.");
+        // If an error occurs, reset the UI immediately
+        resetUIAfterRecording();
     }
 }
 
@@ -692,92 +681,73 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function showDownloadDialog() {
-    if (recordedBlobs.length === 0) {
-        alert('❌ Maaf, tidak ada video yang terekam.');
-        stopRecording();
-        return;
-    }
-
-    const totalSize = recordedBlobs.reduce((a, b) => a + b.size, 0);
-    console.log(`Video ready: ${recordedBlobs.length} chunks, ${totalSize} bytes`);
-    
-    // Calculate file size in MB
-    const sizeInMB = (totalSize / (1024 * 1024)).toFixed(2);
-
-    const message = `
-✅ Recording Selesai!
-
-📊 Detail Video:
-- Ukuran: ${sizeInMB} MB
-- Jumlah frames: ${recordedBlobs.length}
-- Type: WebM (VP8/VP9)
-
-Klik OK untuk download video 🎬
-    `.trim();
-
-    if (confirm(message)) {
-        downloadVideo();
-    } else {
-        showStatus('Download dibatalkan', 'info');
-    }
-}
-
-function stopRecording() {
-    isRecording = false;
-    isAnimating = false;
-    
+function resetUIAfterRecording() {
     const recordBtn = document.getElementById('recordBtn');
     const animateBtn = document.getElementById('animateBtn');
-    const downloadBtn = document.getElementById('downloadBtn');
+    const exportBtn = document.getElementById('downloadBtn');
     const recordingIndicator = document.getElementById('recordingIndicator');
-    
-    recordBtn.textContent = 'Record Animation';
+
+    isRecording = false;
+    recordBtn.textContent = 'Rekam Animasi';
     recordBtn.disabled = false;
     animateBtn.disabled = false;
+    exportBtn.disabled = true; // Disable until a new recording is made
     recordingIndicator.classList.remove('active');
-    downloadBtn.disabled = recordedBlobs.length === 0;
+    document.getElementById('statusMessage').style.display = 'none';
+    console.log("UI has been reset to idle state.");
+}
 
-    if (recordedBlobs.length > 0) {
-        showStatus('✅ Recording complete! Video ready to download.', 'success');
+function showDownloadDialog() {
+    if (recordedBlobs.length === 0) {
+        alert('❌ Maaf, tidak ada data video yang terekam.');
+        resetUIAfterRecording(); // Reset UI if recording fails
+        return;
+    }
+    
+    document.getElementById('downloadBtn').disabled = false; // Enable download button
+
+    const blob = new Blob(recordedBlobs, { type: 'video/webm' });
+    const fileSize = (blob.size / 1024 / 1024).toFixed(2);
+
+    const confirmation = confirm(
+        `🎉 Rekaman selesai!\n\nUkuran File: ${fileSize} MB\n\nKlik "OK" untuk mengunduh video.`
+    );
+
+    if (confirmation) {
+        downloadVideo();
     } else {
-        showStatus('❌ Recording failed or no data captured', 'error');
+        // If user clicks "Cancel", reset the UI but keep the video available for download
+        const recordBtn = document.getElementById('recordBtn');
+        const animateBtn = document.getElementById('animateBtn');
+        const recordingIndicator = document.getElementById('recordingIndicator');
+
+        isRecording = false;
+        recordBtn.textContent = 'Rekam Animasi';
+        recordBtn.disabled = false;
+        animateBtn.disabled = false;
+        recordingIndicator.classList.remove('active');
     }
 }
 
-// ============================================
-// Phase 3: Download Video
-// ============================================
 function downloadVideo() {
     if (recordedBlobs.length === 0) {
-        showStatus('❌ No recorded video to download', 'error');
+        alert('Tidak ada video untuk diunduh.');
         return;
     }
-
     const blob = new Blob(recordedBlobs, { type: 'video/webm' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    
-    // Create filename with timestamp
-    const now = new Date();
-    const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    a.download = `route-animation-${timestamp}.webm`;
-    
+    a.style.display = 'none';
     a.href = url;
+    a.download = `route-animation-${new Date().toISOString()}.webm`;
     document.body.appendChild(a);
-    
-    console.log(`Downloading: ${a.download}, Size: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
-    
     a.click();
-    
-    // Clean up
     setTimeout(() => {
         document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        window.URL.revokeObjectURL(url);
+        // Fully reset UI after download
+        resetUIAfterRecording();
     }, 100);
-
-    const sizeInMB = (blob.size / (1024 * 1024)).toFixed(2);
-    showStatus(`✅ Video berhasil diunduh! (${sizeInMB}MB)`, 'success');
 }
 
 // ============================================
