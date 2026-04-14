@@ -518,20 +518,10 @@ async function startRecording() {
     recordingIndicator.classList.add('active');
 
     showStatus('Starting recording... Press "Stop Recording" to finish.', 'info');
-
-    console.log('Attempting to start recording...');
+    console.log('Recording started');
 
     try {
-        // Try to get canvas from Leaflet
-        const leafletCanvas = document.querySelector('.leaflet-canvas-container canvas');
-        
-        if (leafletCanvas && leafletCanvas.captureStream) {
-            console.log('Using canvas.captureStream method');
-            await recordWithCanvasStream(leafletCanvas);
-        } else {
-            console.log('Canvas stream not available, using screenshot fallback');
-            await recordWithScreenshot();
-        }
+        await recordAnimation();
     } catch (error) {
         console.error('Recording error:', error);
         showStatus('Recording error: ' + error.message, 'error');
@@ -539,80 +529,100 @@ async function startRecording() {
     }
 }
 
-async function recordWithCanvasStream(canvas) {
-    try {
-        const stream = canvas.captureStream(30); // 30 FPS
-        mediaRecorder = new MediaRecorder(stream, {
-            mimeType: 'video/webm',
-        });
-
-        mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-                recordedBlobs.push(event.data);
-                console.log('Recorded chunk:', event.data.size, 'bytes');
-            }
-        };
-
-        mediaRecorder.onerror = (event) => {
-            console.error('MediaRecorder error:', event.error);
-            showStatus('Recording error: ' + event.error, 'error');
-        };
-
-        mediaRecorder.start();
-        console.log('MediaRecorder started');
-
-        // Run animation
-        await animateMarkerAlongRoute();
-        
-        // Stop recording
-        if (mediaRecorder.state !== 'inactive') {
-            mediaRecorder.stop();
-        }
-        
-        console.log('Recording completed');
-    } catch (error) {
-        console.error('Canvas stream error:', error);
-        throw error;
+async function recordAnimation() {
+    // Get map container for canvas size
+    const mapContainer = document.getElementById('map');
+    if (!mapContainer) {
+        throw new Error('Map container not found');
     }
-}
 
-async function recordWithScreenshot() {
-    // Fallback: Use html2canvas + ffmpeg approach
-    console.log('Using screenshot-based recording fallback');
+    // Create recording canvas
+    const recordCanvas = document.createElement('canvas');
+    const ctx = recordCanvas.getContext('2d', { willReadFrequently: true });
     
-    // Simple fallback: Create a single frame webm
-    const canvas = document.querySelector('.leaflet-canvas-container canvas') || 
-                   document.createElement('canvas');
+    recordCanvas.width = mapContainer.offsetWidth;
+    recordCanvas.height = mapContainer.offsetHeight;
     
+    console.log(`Recording canvas size: ${recordCanvas.width}x${recordCanvas.height}`);
+
+    // Get capture stream
+    let stream;
     try {
-        const stream = canvas.captureStream(30);
-        mediaRecorder = new MediaRecorder(stream);
-
-        mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-                recordedBlobs.push(event.data);
-            }
-        };
-
-        mediaRecorder.start();
-        console.log('Screenshot-based recorder started');
-
-        // Run animation
-        await animateMarkerAlongRoute();
-        
-        // Stop recording
-        if (mediaRecorder.state !== 'inactive') {
-            mediaRecorder.stop();
-        }
-        
-        console.log('Screenshot recording completed');
+        stream = recordCanvas.captureStream(30); // 30 FPS
+        console.log('Canvas stream created');
     } catch (error) {
-        console.error('Screenshot recording error:', error);
-        showStatus('Screenshot recording not available. Try a different browser.', 'warning');
-        
-        // Create a dummy video if all fails
-        recordedBlobs.push(new Blob(['dummy'], { type: 'video/webm' }));
+        throw new Error('Video recording not supported. Try Chrome, Firefox, or Edge.');
     }
+
+    // Create media recorder
+    mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm',
+        videoBitsPerSecond: 2500000,
+    });
+
+    let recordingSize = 0;
+    mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+            recordedBlobs.push(event.data);
+            recordingSize += event.data.size;
+            console.log(`Chunk: ${event.data.size}, Total: ${recordingSize}`);
+        }
+    };
+
+    mediaRecorder.onerror = (event) => {
+        console.error('MediaRecorder error:', event.error);
+    };
+
+    mediaRecorder.start(100); // Request data every 100ms
+    console.log('Media recording started');
+
+    // Frame rendering loop
+    let isCapturing = true;
+    let frameCount = 0;
+    const fps = 30;
+    const frameDuration = 1000 / fps;
+    let lastFrameTime = Date.now();
+
+    const renderFrame = () => {
+        if (!isCapturing || !isRecording) {
+            return;
+        }
+
+        const now = Date.now();
+        if (now - lastFrameTime >= frameDuration) {
+            // Draw map canvas to recording canvas
+            try {
+                const mapCanvas = document.querySelector('.leaflet-canvas-container canvas');
+                if (mapCanvas) {
+                    ctx.clearRect(0, 0, recordCanvas.width, recordCanvas.height);
+                    ctx.drawImage(mapCanvas, 0, 0, recordCanvas.width, recordCanvas.height);
+                    frameCount++;
+                }
+            } catch (error) {
+                console.warn('Frame render error:', error);
+            }
+
+            lastFrameTime = now;
+        }
+
+        requestAnimationFrame(renderFrame);
+    };
+
+    // Start rendering frames
+    renderFrame();
+
+    // Run animation
+    await animateMarkerAlongRoute();
+
+    // Stop capturing
+    isCapturing = false;
+
+    // Stop media recorder
+    if (mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+    }
+
+    console.log(`Recording finished: ${frameCount} frames, ${recordingSize} bytes`);
 }
 
 function stopRecording() {
