@@ -542,87 +542,88 @@ async function recordAnimation() {
     showStatus('Recording started! Animasi akan dimulai...', 'info');
     console.log('Starting actual recording');
 
-    // Get map container
     const mapContainer = document.getElementById('map');
     if (!mapContainer) {
         throw new Error('Map container not found');
     }
 
-    // Try to find Leaflet canvas - check multiple possible locations
-    let mapCanvas = document.querySelector('.leaflet-canvas-container canvas');
-    
-    if (!mapCanvas) {
-        console.warn('Canvas not found in .leaflet-canvas-container, searching alternatives...');
-        // Try all canvases in the map
+    // Get the Leaflet canvas
+    let sourceCanvas = document.querySelector('.leaflet-canvas-container canvas');
+    if (!sourceCanvas) {
         const allCanvases = mapContainer.querySelectorAll('canvas');
-        console.log(`Found ${allCanvases.length} canvas elements in map`);
-        
         if (allCanvases.length > 0) {
-            mapCanvas = allCanvases[0];
-            console.log('Using first canvas found');
+            sourceCanvas = allCanvases[0];
         }
     }
-    
-    if (!mapCanvas) {
-        // If still no canvas, create a recording using the map element
-        console.warn('No canvas found - Leaflet may be using SVG rendering');
-        console.log('Falling back to html2canvas approach');
-        throw new Error('Canvas rendering not available. Leaflet may be using SVG mode.');
+
+    if (!sourceCanvas) {
+        throw new Error('Canvas not found');
     }
 
-    console.log(`Map canvas found: ${mapCanvas.width}x${mapCanvas.height}`);
-    console.log(`Map container size: ${mapContainer.offsetWidth}x${mapContainer.offsetHeight}`);
+    console.log(`Source canvas: ${sourceCanvas.width}x${sourceCanvas.height}`);
 
-    // Use map canvas directly for recording
+    // Create recording canvas
+    const recCanvas = document.createElement('canvas');
+    recCanvas.width = sourceCanvas.width;
+    recCanvas.height = sourceCanvas.height;
+    const recCtx = recCanvas.getContext('2d');
+
+    console.log(`Recording canvas: ${recCanvas.width}x${recCanvas.height}`);
+
+    // Get capture stream
     let stream;
     try {
-        stream = mapCanvas.captureStream(30); // 30 FPS
-        console.log('Direct canvas stream created');
+        stream = recCanvas.captureStream(30);
+        console.log('Capture stream created');
     } catch (error) {
-        console.error('Direct stream failed:', error);
-        throw new Error('Video recording not supported. Try Chrome, Firefox, or Edge.');
+        console.error('Stream error:', error);
+        throw new Error('Recording not supported');
     }
 
-    // Clear any previous blobs
+    // Setup recorder
     recordedBlobs = [];
-
-    // Create media recorder
     mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'video/webm',
         videoBitsPerSecond: 2500000,
     });
 
-    let recordingSize = 0;
     let chunkCount = 0;
-    
     mediaRecorder.ondataavailable = (event) => {
-        console.log(`ondataavailable fired, data size: ${event.data.size}`);
         if (event.data.size > 0) {
             recordedBlobs.push(event.data);
-            recordingSize += event.data.size;
             chunkCount++;
-            console.log(`Chunk ${chunkCount}: ${event.data.size} bytes, Total: ${recordingSize}`);
+            console.log(`Chunk ${chunkCount}: ${event.data.size}`);
         }
     };
 
-    mediaRecorder.onstart = () => {
-        console.log('MediaRecorder STARTED');
+    mediaRecorder.onerror = (err) => {
+        console.error('Recorder error:', err);
     };
 
-    mediaRecorder.onstop = () => {
-        console.log('MediaRecorder STOPPED. Total chunks:', chunkCount, 'Total size:', recordingSize);
+    // Start recording
+    mediaRecorder.start(100);
+    console.log('Recording started');
+
+    // Frame capture loop
+    let isCapturing = true;
+    let frames = 0;
+
+    const captureFrame = () => {
+        if (!isCapturing) return;
+
+        try {
+            // Draw Leaflet canvas to recording canvas
+            recCtx.drawImage(sourceCanvas, 0, 0);
+            frames++;
+        } catch (err) {
+            console.warn('Draw error:', err);
+        }
+
+        requestAnimationFrame(captureFrame);
     };
 
-    mediaRecorder.onerror = (event) => {
-        console.error('MediaRecorder error:', event.error);
-    };
-
-    // Start recording FIRST before animation
-    mediaRecorder.start(100); // Request data every 100ms for better capture
-    console.log('Media recording started');
-
-    // Small delay to ensure recorder is ready
-    await sleep(200);
+    // Start capturing frames
+    captureFrame();
 
     // Run animation
     showStatus('🎥 Recording... Animasi sedang berjalan...', 'info');
@@ -630,31 +631,25 @@ async function recordAnimation() {
     await animateMarkerAlongRoute();
     console.log('Animation finished!');
 
-    // Wait 2 seconds after animation completes to capture tail
-    console.log('Animation finished, waiting 2 seconds before stopping record...');
+    // Wait 2 seconds
     showStatus('Menunggu 2 detik untuk menyelesaikan recording...', 'info');
     await sleep(2000);
 
-    // Request final data dump BEFORE stopping
-    console.log('Requesting final data dump...');
+    // Stop capturing
+    isCapturing = false;
+    await sleep(500);
+
+    // Stop recorder
     mediaRecorder.requestData();
-    
-    // Wait a bit for final data to arrive
-    await sleep(500);
-
-    // Now stop media recorder
-    console.log('Stopping MediaRecorder...');
+    await sleep(100);
     mediaRecorder.stop();
-    
-    // Wait for stop to complete
     await sleep(500);
 
-    console.log(`Recording finished: ${chunkCount} chunks, ${recordingSize} bytes`);
+    console.log(`Done: ${chunkCount} chunks, ${frames} frames`);
     showStatus('Recording selesai! Video siap diunduh.', 'success');
 
     if (recordedBlobs.length === 0) {
-        console.warn('WARNING: No blobs recorded!');
-        throw new Error('No video data was captured. Please check browser console.');
+        throw new Error('No video data captured');
     }
 }
 
