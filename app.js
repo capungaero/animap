@@ -16,6 +16,7 @@ let animationSpeed = 1.0;
 let recordedBlobs = [];
 let mapStyleLayers = {};
 let autoZoomActive = false;
+let mapClickMode = null; // 'start' or 'end' for selecting coordinates by clicking
 
 // Tile layer configurations
 const TILE_LAYERS = {
@@ -50,8 +51,31 @@ function initializeMap() {
 
     // Map click handler for setting points
     map.on('click', function(e) {
-        const canary = [e.latlng.lat, e.latlng.lng].join(',');
-        console.log('Clicked:', canary);
+        const coords = [e.latlng.lat, e.latlng.lng].join(',');
+        const startInput = document.getElementById('startPoint');
+        const endInput = document.getElementById('endPoint');
+        
+        // If neither field is empty, ask user which to update - prefer setting start first
+        if (startInput.value && endInput.value) {
+            const choice = confirm(
+                `Start: ${startInput.value}\nEnd: ${endInput.value}\n\nClear Start and set new? (Cancel = set End)`
+            );
+            if (choice) {
+                startInput.value = coords;
+                showStatus('Start point set! Now click map or enter end point.', 'info');
+            } else {
+                endInput.value = coords;
+                showStatus('End point set! Click "Generate Route" to proceed.', 'info');
+            }
+        } else if (startInput.value) {
+            // Start already set, set end
+            endInput.value = coords;
+            showStatus('End point set! Click "Generate Route" to proceed.', 'info');
+        } else {
+            // Start not set, set start
+            startInput.value = coords;
+            showStatus('Start point set! Now click map or enter end point.', 'info');
+        }
     });
 
     setupEventListeners();
