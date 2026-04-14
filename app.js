@@ -338,27 +338,89 @@ function displayRoute(coordinates, startLat, startLon, endLat, endLon) {
 // Phase 2: Custom Marker Icon
 // ============================================
 function createCarIcon() {
-    return L.divIcon({
-        html: `
+    let html;
+    
+    if (customIconUrl) {
+        // Use custom uploaded image
+        html = `
+            <img src="${customIconUrl}" style="
+                width: ${iconSize}px;
+                height: ${iconSize}px;
+                display: block;
+                transform: rotate(90deg);
+            " alt="Custom Icon">
+        `;
+    } else {
+        // Use emoji icon
+        const fontSize = Math.max(12, iconSize - 8);
+        html = `
             <div style="
-                width: 40px;
-                height: 40px;
+                width: ${iconSize}px;
+                height: ${iconSize}px;
                 background: #ff6600;
                 border: 2px solid #333;
                 border-radius: 6px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 28px;
+                font-size: ${fontSize}px;
                 color: white;
                 box-shadow: 0 2px 6px rgba(0,0,0,0.4);
                 transform: rotate(90deg);
+                overflow: hidden;
             ">${selectedIcon}</div>
-        `,
+        `;
+    }
+    
+    return L.divIcon({
+        html: html,
         className: 'custom-marker-icon',
-        iconSize: [40, 40],
-        iconAnchor: [20, 20],
+        iconSize: [iconSize, iconSize],
+        iconAnchor: [iconSize / 2, iconSize / 2],
     });
+}
+
+// Update existing marker icon
+function updateMarkerIcon() {
+    if (animatedMarker) {
+        const newIcon = createCarIcon();
+        animatedMarker.setIcon(newIcon);
+        console.log('Marker icon updated');
+    }
+}
+
+// Handle icon size slider change
+function handleIconSizeChange(e) {
+    iconSize = parseInt(e.target.value);
+    document.getElementById('iconSizeValue').textContent = iconSize + 'px';
+    console.log('Icon size changed to:', iconSize);
+    
+    // Update existing marker if it exists
+    if (animatedMarker) {
+        updateMarkerIcon();
+    }
+}
+
+// Handle custom icon upload
+function handleCustomIconUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        customIconUrl = event.target.result;
+        const preview = document.getElementById('customIconPreview');
+        preview.src = customIconUrl;
+        preview.style.display = 'block';
+        
+        console.log('Custom icon uploaded');
+        
+        // Update existing marker if it exists
+        if (animatedMarker) {
+            updateMarkerIcon();
+        }
+    };
+    reader.readAsDataURL(file);
 }
 
 // ============================================
