@@ -112,12 +112,19 @@ function setupEventListeners() {
     styleSelector.addEventListener('change', changeMapStyle);
     iconSelector.addEventListener('change', (e) => {
         selectedIcon = e.target.value;
-        showStatus(`Icon changed to ${selectedIcon}`, 'info');
+        if (animatedMarker) {
+            animatedMarker.getElement().innerHTML = selectedIcon;
+        }
     });
     speedSlider.addEventListener('input', updateSpeed);
     animateBtn.addEventListener('click', startAnimation);
     recordBtn.addEventListener('click', handleRecordClick);
     downloadBtn.addEventListener('click', downloadVideo);
+
+    document.getElementById('recordingAspectRatio').addEventListener('change', updateRecordingAreaOverlay);
+
+    // Set initial state on load
+    updateRecordingAreaOverlay();
 }
 
 // ============================================
@@ -841,4 +848,51 @@ function showStatus(message, type = 'info') {
 // ============================================
 // Initialize on Page Load
 // ============================================
-document.addEventListener('DOMContentLoaded', initializeMap);
+document.addEventListener('DOMContentLoaded', () => {
+    initializeMap();
+    setupEventListeners();
+});
+
+function updateRecordingAreaOverlay() {
+    const overlay = document.getElementById('recording-area-overlay');
+    const mapContainer = document.getElementById('map');
+    const aspectRatio = document.getElementById('recordingAspectRatio').value;
+
+    if (!overlay || !mapContainer) return;
+
+    if (aspectRatio === 'auto') {
+        overlay.style.display = 'none';
+        return;
+    }
+
+    let mapWidth = mapContainer.offsetWidth;
+    let mapHeight = mapContainer.offsetHeight;
+    
+    let boxWidth, boxHeight, boxTop, boxLeft;
+
+    if (aspectRatio === '16:9') {
+        boxWidth = mapWidth;
+        boxHeight = Math.round(mapWidth / (16 / 9));
+        if (boxHeight > mapHeight) {
+            boxHeight = mapHeight;
+            boxWidth = Math.round(mapHeight * (16 / 9));
+        }
+    } else if (aspectRatio === '1:1') {
+        if (mapWidth > mapHeight) {
+            boxHeight = mapHeight;
+            boxWidth = mapHeight;
+        } else {
+            boxWidth = mapWidth;
+            boxHeight = mapWidth;
+        }
+    }
+
+    boxTop = (mapHeight - boxHeight) / 2;
+    boxLeft = (mapWidth - boxWidth) / 2;
+
+    overlay.style.width = `${boxWidth}px`;
+    overlay.style.height = `${boxHeight}px`;
+    overlay.style.top = `${boxTop}px`;
+    overlay.style.left = `${boxLeft}px`;
+    overlay.style.display = 'block';
+}
