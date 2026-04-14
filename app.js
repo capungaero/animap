@@ -512,16 +512,19 @@ async function startRecording() {
     const recordBtn = document.getElementById('recordBtn');
     const animateBtn = document.getElementById('animateBtn');
     const recordingIndicator = document.getElementById('recordingIndicator');
-    recordBtn.textContent = 'Stop Recording';
-    recordBtn.disabled = false;
+    recordBtn.textContent = 'Recording...';
+    recordBtn.disabled = true;
     animateBtn.disabled = true;
     recordingIndicator.classList.add('active');
 
-    showStatus('Starting recording... Press "Stop Recording" to finish.', 'info');
-    console.log('Recording started');
+    showStatus('Recording akan dimulai dalam 1 detik...', 'info');
+    console.log('Recording sequence initiated');
 
     try {
         await recordAnimation();
+        
+        // Show download dialog
+        showDownloadDialog();
     } catch (error) {
         console.error('Recording error:', error);
         showStatus('Recording error: ' + error.message, 'error');
@@ -530,6 +533,13 @@ async function startRecording() {
 }
 
 async function recordAnimation() {
+    // Wait 1 second before recording
+    console.log('Waiting 1 second before recording...');
+    await sleep(1000);
+    
+    showStatus('Recording started! Animasi akan dimulai...', 'info');
+    console.log('Starting actual recording');
+
     // Get map container for canvas size
     const mapContainer = document.getElementById('map');
     if (!mapContainer) {
@@ -612,7 +622,13 @@ async function recordAnimation() {
     renderFrame();
 
     // Run animation
+    showStatus('🎥 Recording... Animasi sedang berjalan...', 'info');
     await animateMarkerAlongRoute();
+    
+    // Wait 2 seconds after animation completes
+    console.log('Animation finished, waiting 2 seconds before stopping record...');
+    showStatus('Menunggu 2 detik untuk menyelesaikan recording...', 'info');
+    await sleep(2000);
 
     // Stop capturing
     isCapturing = false;
@@ -623,6 +639,43 @@ async function recordAnimation() {
     }
 
     console.log(`Recording finished: ${frameCount} frames, ${recordingSize} bytes`);
+    showStatus('Recording selesai! Video siap diunduh.', 'success');
+}
+
+// Helper sleep function
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function showDownloadDialog() {
+    if (recordedBlobs.length === 0) {
+        alert('❌ Maaf, tidak ada video yang terekam.');
+        stopRecording();
+        return;
+    }
+
+    const totalSize = recordedBlobs.reduce((a, b) => a + b.size, 0);
+    console.log(`Video ready: ${recordedBlobs.length} chunks, ${totalSize} bytes`);
+    
+    // Calculate file size in MB
+    const sizeInMB = (totalSize / (1024 * 1024)).toFixed(2);
+
+    const message = `
+✅ Recording Selesai!
+
+📊 Detail Video:
+- Ukuran: ${sizeInMB} MB
+- Jumlah frames: ${recordedBlobs.length}
+- Type: WebM (VP8/VP9)
+
+Klik OK untuk download video 🎬
+    `.trim();
+
+    if (confirm(message)) {
+        downloadVideo();
+    } else {
+        showStatus('Download dibatalkan', 'info');
+    }
 }
 
 function stopRecording() {
@@ -640,7 +693,11 @@ function stopRecording() {
     recordingIndicator.classList.remove('active');
     downloadBtn.disabled = recordedBlobs.length === 0;
 
-    showStatus('Recording complete! Click "Export Video" to download.', 'success');
+    if (recordedBlobs.length > 0) {
+        showStatus('✅ Recording complete! Video ready to download.', 'success');
+    } else {
+        showStatus('❌ Recording failed or no data captured', 'error');
+    }
 }
 
 // ============================================
@@ -648,21 +705,34 @@ function stopRecording() {
 // ============================================
 function downloadVideo() {
     if (recordedBlobs.length === 0) {
-        showStatus('No recorded video to download', 'error');
+        showStatus('❌ No recorded video to download', 'error');
         return;
     }
 
     const blob = new Blob(recordedBlobs, { type: 'video/webm' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
+    
+    // Create filename with timestamp
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    a.download = `route-animation-${timestamp}.webm`;
+    
     a.href = url;
-    a.download = `route-${new Date().toISOString().split('T')[0]}.webm`;
     document.body.appendChild(a);
+    
+    console.log(`Downloading: ${a.download}, Size: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+    
     a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    
+    // Clean up
+    setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, 100);
 
-    showStatus('Video downloaded successfully!', 'success');
+    const sizeInMB = (blob.size / (1024 * 1024)).toFixed(2);
+    showStatus(`✅ Video berhasil diunduh! (${sizeInMB}MB)`, 'success');
 }
 
 // ============================================
