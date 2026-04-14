@@ -23,6 +23,8 @@ let mediaRecorder = null; // Global media recorder instance
 let customIconUrl = null; // To store the custom uploaded icon
 let iconSize = 20; // Default icon size
 let iconRotation = 90; // Default rotation in degrees
+let videoFormat = 'webm'; // Video format: 'webm' or 'mp4'
+let ffmpegLoaded = false; // Track if FFmpeg is loaded
 
 // ============================================
 // Version Control
@@ -141,6 +143,12 @@ function setupEventListeners() {
     downloadBtn.addEventListener('click', downloadVideo);
 
     document.getElementById('recordingAspectRatio').addEventListener('change', updateRecordingAreaOverlay);
+
+    // Video format selector
+    document.getElementById('videoFormat').addEventListener('change', (e) => {
+        videoFormat = e.target.value;
+        console.log('Video format changed to:', videoFormat);
+    });
 
     // Icon customization listeners
     document.getElementById('iconSizeSlider').addEventListener('input', handleIconSizeChange);
@@ -833,6 +841,15 @@ function downloadVideo() {
         alert('Tidak ada video untuk diunduh.');
         return;
     }
+
+    if (videoFormat === 'webm') {
+        downloadWebM();
+    } else if (videoFormat === 'mp4') {
+        downloadMP4();
+    }
+}
+
+function downloadWebM() {
     const blob = new Blob(recordedBlobs, { type: 'video/webm' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -844,9 +861,68 @@ function downloadVideo() {
     setTimeout(() => {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-        // Fully reset UI after download
         resetUIAfterRecording();
     }, 100);
+}
+
+async function downloadMP4() {
+    showStatus('Mengonversi video ke MP4 (ini membutuhkan waktu beberapa saat)...', 'info');
+    
+    try {
+        const { FFmpeg, fetchFile } = FFmpeg;
+        const ffmpeg = new FFmpeg.FFmpeg();
+
+        // Load FFmpeg
+        if (!ffmpegLoaded) {
+            await ffmpeg.load();
+            ffmpegLoaded = true;
+        }
+
+        // Create WebM blob first
+        const webmBlob = new Blob(recordedBlobs, { type: 'video/webm' });
+        
+        // Write WebM file to FFmpeg filesystem
+        await ffmpeg.writeFile('input.webm', new Uint8Array(await webmBlob.arrayBuffer()));
+
+        // Run FFmpeg conversion command
+        await ffmpeg.exec([
+            '-i', 'input.webm',
+            '-c:v', 'libx264',
+            '-preset', 'fast',
+            '-crf', '23',
+            '-c:a', 'aac',
+            'output.mp4'
+        ]);
+
+        // Read output file
+        const data = await ffmpeg.readFile('output.mp4');
+        const mp4Blob = new Blob([data.buffer], { type: 'video/mp4' });
+        
+        // Download MP4
+        const url = URL.createObjectURL(mp4Blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `route-animation-${new Date().toISOString()}.mp4`;
+        document.body.appendChild(a);
+        a.click();
+
+        // Cleanup
+        await ffmpeg.deleteFile('input.webm');
+        await ffmpeg.deleteFile('output.mp4');
+
+        setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            resetUIAfterRecording();
+            showStatus('Video MP4 berhasil diunduh!', 'success');
+        }, 100);
+
+    } catch (error) {
+        console.error('MP4 conversion error:', error);
+        showStatus('Error saat mengonversi ke MP4: ' + error.message, 'error');
+        resetUIAfterRecording();
+    }
 }
 
 // ============================================
