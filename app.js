@@ -119,7 +119,6 @@ function setupEventListeners() {
 async function generateRoute() {
     const startInput = document.getElementById('startPoint').value.trim();
     const endInput = document.getElementById('endPoint').value.trim();
-    const status = document.getElementById('statusMessage');
 
     if (!startInput || !endInput) {
         showStatus('Please enter both start and destination coordinates', 'error');
@@ -141,10 +140,15 @@ async function generateRoute() {
         const coordinates = `${startLon},${startLat};${endLon},${endLat}`;
         const url = `https://router.project-osrm.org/route/v1/driving/${coordinates}?geometries=geojson&overview=full`;
 
+        console.log('Requesting OSRM route:', url);
         const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
         const data = await response.json();
+        console.log('OSRM Response:', data);
 
         if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) {
             showStatus('No route found. Try different coordinates.', 'error');
@@ -153,15 +157,13 @@ async function generateRoute() {
 
         // Store route data
         currentRoute = data.routes[0];
+        console.log('Route stored:', currentRoute);
+        
         const routeCoordinates = currentRoute.geometry.coordinates.map(coord => [coord[1], coord[0]]);
 
         // Show route on map
         displayRoute(routeCoordinates, startLat, startLon, endLat, endLon);
 
-        // Enable video controls
-        document.getElementById('videoControls').classList.add('active');
-
-        showStatus('Route loaded successfully! Click "Record Video" to capture animation.', 'success');
     } catch (error) {
         console.error('Error fetching route:', error);
         showStatus('Error: ' + error.message, 'error');
@@ -180,48 +182,60 @@ function parseCoordinates(input) {
 // Phase 1: Display Route
 // ============================================
 function displayRoute(coordinates, startLat, startLon, endLat, endLon) {
-    clearRoute();
-
-    // Add start marker
-    startMarker = L.circleMarker([startLat, startLon], {
-        radius: 8,
-        fillColor: '#00ff00',
-        color: '#000',
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.8,
-    }).addTo(map).bindPopup('Start Point');
-
-    // Add end marker
-    endMarker = L.circleMarker([endLat, endLon], {
-        radius: 8,
-        fillColor: '#ff0000',
-        color: '#000',
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.8,
-    }).addTo(map).bindPopup('End Point');
-
-    // Display standard polyline
-    currentPolyline = L.polyline(coordinates, {
-        color: '#0066cc',
-        weight: 3,
-        opacity: 0.6,
-        dashArray: '5, 5',
-    }).addTo(map);
-
-    // Phase 2: Add animated AntPath (with fallback)
     try {
-        if (L.polyline.antPath) {
-            currentAntPath = L.polyline.antPath(coordinates, {
-                color: '#ff6600',
-                weight: 4,
-                opacity: 0.8,
-                dashArray: [10, 5],
-                delay: 400,
-            }).addTo(map);
-        } else {
-            // Fallback: use animated polyline with CSS dash
+        clearRoute();
+
+        // Add start marker
+        startMarker = L.circleMarker([startLat, startLon], {
+            radius: 8,
+            fillColor: '#00ff00',
+            color: '#000',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.8,
+        }).addTo(map).bindPopup('Start Point');
+
+        // Add end marker
+        endMarker = L.circleMarker([endLat, endLon], {
+            radius: 8,
+            fillColor: '#ff0000',
+            color: '#000',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.8,
+        }).addTo(map).bindPopup('End Point');
+
+        // Display standard polyline
+        currentPolyline = L.polyline(coordinates, {
+            color: '#0066cc',
+            weight: 3,
+            opacity: 0.6,
+            dashArray: '5, 5',
+        }).addTo(map);
+
+        // Phase 2: Add animated AntPath (with fallback)
+        try {
+            if (L.polyline.antPath) {
+                currentAntPath = L.polyline.antPath(coordinates, {
+                    color: '#ff6600',
+                    weight: 4,
+                    opacity: 0.8,
+                    dashArray: [10, 5],
+                    delay: 400,
+                }).addTo(map);
+            } else {
+                // Fallback: use animated polyline with CSS dash
+                currentAntPath = L.polyline(coordinates, {
+                    color: '#ff6600',
+                    weight: 4,
+                    opacity: 0.8,
+                    dashArray: '10, 5',
+                    className: 'animated-polyline',
+                }).addTo(map);
+            }
+        } catch (error) {
+            console.warn('AntPath not available, using fallback:', error);
+            // Fallback: use standard polyline with CSS animation
             currentAntPath = L.polyline(coordinates, {
                 color: '#ff6600',
                 weight: 4,
@@ -230,33 +244,40 @@ function displayRoute(coordinates, startLat, startLon, endLat, endLon) {
                 className: 'animated-polyline',
             }).addTo(map);
         }
+
+        // Phase 2: Add moving marker
+        const markerIcon = createCarIcon();
+        animatedMarker = L.marker([startLat, startLon], {
+            icon: markerIcon,
+            zIndexOffset: 1000,
+        }).addTo(map).bindPopup('Vehicle Position');
+
+        // Auto-zoom to route bounds
+        const bounds = L.latLngBounds(coordinates);
+        map.fitBounds(bounds, { padding: [50, 50] });
+        autoZoomActive = true;
+
+        // Store animation duration based on route distance
+        if (currentRoute && currentRoute.distance) {
+            const distance = currentRoute.distance / 1000; // meters to km
+            animationDuration = Math.max(5000, Math.min(20000, distance * 500)); // Dynamic duration
+        } else {
+            animationDuration = 10000; // Default duration
+        }
+
+        // Enable video controls - Make sure the element exists!
+        const videoControls = document.getElementById('videoControls');
+        if (videoControls) {
+            videoControls.classList.add('active');
+        } else {
+            console.error('Video controls element not found!');
+        }
+
+        showStatus('Route loaded successfully! Select animation options and click "Start Animation".', 'success');
     } catch (error) {
-        console.warn('AntPath not available, using fallback:', error);
-        // Fallback: use standard polyline with CSS animation
-        currentAntPath = L.polyline(coordinates, {
-            color: '#ff6600',
-            weight: 4,
-            opacity: 0.8,
-            dashArray: '10, 5',
-            className: 'animated-polyline',
-        }).addTo(map);
+        console.error('Error displaying route:', error);
+        showStatus('Error displaying route: ' + error.message, 'error');
     }
-
-    // Phase 2: Add moving marker
-    const markerIcon = createCarIcon();
-    animatedMarker = L.marker([startLat, startLon], {
-        icon: markerIcon,
-        zIndexOffset: 1000,
-    }).addTo(map).bindPopup('Vehicle Position');
-
-    // Auto-zoom to route bounds
-    const bounds = L.latLngBounds(coordinates);
-    map.fitBounds(bounds, { padding: [50, 50] });
-    autoZoomActive = true;
-
-    // Store animation duration based on route distance
-    const distance = currentRoute.distance / 1000; // meters to km
-    animationDuration = Math.max(5000, Math.min(20000, distance * 500)); // Dynamic duration
 }
 
 // ============================================
