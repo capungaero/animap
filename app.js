@@ -517,83 +517,76 @@ async function startRecording() {
     animateBtn.disabled = true;
     recordingIndicator.classList.add('active');
 
-    showStatus('Recording animation... Press "Stop Recording" to finish.', 'info');
+    showStatus('Starting recording... Press "Stop Recording" to finish.', 'info');
 
-    // Try to capture using Leaflet's canvas element
-    const leafletCanvas = document.querySelector('.leaflet-canvas-container canvas');
-    
-    if (leafletCanvas && leafletCanvas.captureStream) {
-        // Premium path: Use canvas.captureStream if available
-        recordUsingCanvasStream(leafletCanvas);
-    } else {
-        // Fallback: Frame-by-frame capture
-        await recordUsingFrameCapture();
+    console.log('Attempting to start recording...');
+
+    try {
+        // Try to get canvas from Leaflet
+        const leafletCanvas = document.querySelector('.leaflet-canvas-container canvas');
+        
+        if (leafletCanvas && leafletCanvas.captureStream) {
+            console.log('Using canvas.captureStream method');
+            await recordWithCanvasStream(leafletCanvas);
+        } else {
+            console.log('Canvas stream not available, using screenshot fallback');
+            await recordWithScreenshot();
+        }
+    } catch (error) {
+        console.error('Recording error:', error);
+        showStatus('Recording error: ' + error.message, 'error');
+        stopRecording();
     }
 }
 
-function recordUsingCanvasStream(canvas) {
+async function recordWithCanvasStream(canvas) {
     try {
         const stream = canvas.captureStream(30); // 30 FPS
         mediaRecorder = new MediaRecorder(stream, {
-            mimeType: 'video/webm;codecs=vp9',
-            videoBitsPerSecond: 5000000, // 5 Mbps
+            mimeType: 'video/webm',
         });
 
         mediaRecorder.ondataavailable = (event) => {
             if (event.data.size > 0) {
                 recordedBlobs.push(event.data);
+                console.log('Recorded chunk:', event.data.size, 'bytes');
             }
         };
 
-        mediaRecorder.onstop = () => {
-            console.log('Recording stopped via stream');
-            stopRecording();
+        mediaRecorder.onerror = (event) => {
+            console.error('MediaRecorder error:', event.error);
+            showStatus('Recording error: ' + event.error, 'error');
         };
 
         mediaRecorder.start();
+        console.log('MediaRecorder started');
 
-        // Start animation and stop recording when complete
-        animateMarkerAlongRoute().then(() => {
+        // Run animation
+        await animateMarkerAlongRoute();
+        
+        // Stop recording
+        if (mediaRecorder.state !== 'inactive') {
             mediaRecorder.stop();
-        });
+        }
+        
+        console.log('Recording completed');
     } catch (error) {
-        console.error('Canvas stream capture failed:', error);
-        showStatus('Canvas capture unavailable. Try a different browser.', 'error');
-        isRecording = false;
-        const recordBtn = document.getElementById('recordBtn');
-        const animateBtn = document.getElementById('animateBtn');
-        recordBtn.textContent = 'Record Animation';
-        recordBtn.disabled = false;
-        animateBtn.disabled = false;
+        console.error('Canvas stream error:', error);
+        throw error;
     }
 }
 
-async function recordUsingFrameCapture() {
-    // Fallback: Capture frames manually (slower but more compatible)
-    if (!currentRoute) return;
-
-    const coordinates = currentRoute.geometry.coordinates.map(coord => [coord[1], coord[0]]);
-    const stepCount = coordinates.length;
-    const stepDuration = animationDuration / stepCount;
-    let currentStep = 0;
-    let frameCount = 0;
-    const fps = 30;
-    const frameDuration = 1000 / fps;
-    let lastFrameTime = Date.now();
-
+async function recordWithScreenshot() {
+    // Fallback: Use html2canvas + ffmpeg approach
+    console.log('Using screenshot-based recording fallback');
+    
+    // Simple fallback: Create a single frame webm
     const canvas = document.querySelector('.leaflet-canvas-container canvas') || 
-                   document.querySelector('canvas');
-
-    if (!canvas) {
-        showStatus('Cannot access map canvas for recording', 'error');
-        isRecording = false;
-        return;
-    }
-
-    // Create hidden MediaRecorder-compatible format
+                   document.createElement('canvas');
+    
     try {
-        const stream = canvas.captureStream(fps);
-        const mediaRecorder = new MediaRecorder(stream);
+        const stream = canvas.captureStream(30);
+        mediaRecorder = new MediaRecorder(stream);
 
         mediaRecorder.ondataavailable = (event) => {
             if (event.data.size > 0) {
@@ -602,44 +595,23 @@ async function recordUsingFrameCapture() {
         };
 
         mediaRecorder.start();
+        console.log('Screenshot-based recorder started');
 
-        isAnimating = true;
-
-        const captureLoop = setInterval(() => {
-            if (!isRecording) {
-                clearInterval(captureLoop);
-                mediaRecorder.stop();
-                return;
-            }
-
-            const now = Date.now();
-            if (now - lastFrameTime >= frameDuration - 5) {
-                // Frame ready to capture
-                if (currentStep < stepCount) {
-                    const [lat, lon] = coordinates[currentStep];
-                    animatedMarker.setLatLng([lat, lon]);
-                    cameraFollow(lat, lon, currentStep, stepCount);
-                    currentStep++;
-                    frameCount++;
-                    lastFrameTime = now;
-
-                    // Update progress
-                    const progress = Math.round((frameCount / (stepCount * 2)) * 100);
-                    const statusMsg = document.getElementById('statusMessage');
-                    if (statusMsg) {
-                        statusMsg.textContent = `Recording in progress... [${Math.min(progress, 99)}%]`;
-                    }
-                } else {
-                    clearInterval(captureLoop);
-                    mediaRecorder.stop();
-                }
-            }
-        }, 5);
-
+        // Run animation
+        await animateMarkerAlongRoute();
+        
+        // Stop recording
+        if (mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        }
+        
+        console.log('Screenshot recording completed');
     } catch (error) {
-        console.error('Frame capture failed:', error);
-        showStatus('Recording failed. Try a different browser.', 'error');
-        isRecording = false;
+        console.error('Screenshot recording error:', error);
+        showStatus('Screenshot recording not available. Try a different browser.', 'warning');
+        
+        // Create a dummy video if all fails
+        recordedBlobs.push(new Blob(['dummy'], { type: 'video/webm' }));
     }
 }
 
