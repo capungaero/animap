@@ -8,9 +8,6 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
     
-    <!-- Leaflet AntPath CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ant-path/1.1.2/leaflet-ant-path.min.css" />
-    
     <style>
         * {
             margin: 0;
@@ -236,6 +233,18 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /* Animated polyline styles */
+        .animated-polyline {
+            stroke-dasharray: 10, 5;
+            animation: dash 20s linear infinite;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -300;
+            }
+        }
     </style>
 </head>
 <body>
@@ -318,8 +327,8 @@
     <!-- Leaflet JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-    <!-- Leaflet AntPath -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ant-path/1.1.2/leaflet-ant-path.umd.min.js"></script>
+    <!-- Leaflet AntPath (working CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-ant-path@1.1.2/dist/leaflet-ant-path.umd.min.js"></script>
 
     <!-- Main Application Script -->
     <script src="app.js"></script>

@@ -201,14 +201,37 @@ function displayRoute(coordinates, startLat, startLon, endLat, endLon) {
         dashArray: '5, 5',
     }).addTo(map);
 
-    // Phase 2: Add animated AntPath
-    currentAntPath = L.polyline.antPath(coordinates, {
-        color: '#ff6600',
-        weight: 4,
-        opacity: 0.8,
-        dashArray: [10, 5],
-        delay: 400,
-    }).addTo(map);
+    // Phase 2: Add animated AntPath (with fallback)
+    try {
+        if (L.polyline.antPath) {
+            currentAntPath = L.polyline.antPath(coordinates, {
+                color: '#ff6600',
+                weight: 4,
+                opacity: 0.8,
+                dashArray: [10, 5],
+                delay: 400,
+            }).addTo(map);
+        } else {
+            // Fallback: use animated polyline with CSS dash
+            currentAntPath = L.polyline(coordinates, {
+                color: '#ff6600',
+                weight: 4,
+                opacity: 0.8,
+                dashArray: '10, 5',
+                className: 'animated-polyline',
+            }).addTo(map);
+        }
+    } catch (error) {
+        console.warn('AntPath not available, using fallback:', error);
+        // Fallback: use standard polyline with CSS animation
+        currentAntPath = L.polyline(coordinates, {
+            color: '#ff6600',
+            weight: 4,
+            opacity: 0.8,
+            dashArray: '10, 5',
+            className: 'animated-polyline',
+        }).addTo(map);
+    }
 
     // Phase 2: Add moving marker
     const markerIcon = createCarIcon();
