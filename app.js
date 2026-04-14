@@ -837,14 +837,18 @@ function showDownloadDialog() {
 }
 
 function downloadVideo() {
+    console.log('downloadVideo called, videoFormat:', videoFormat);
+    
     if (recordedBlobs.length === 0) {
         alert('Tidak ada video untuk diunduh.');
         return;
     }
 
     if (videoFormat === 'webm') {
+        console.log('Downloading WebM format...');
         downloadWebM();
     } else if (videoFormat === 'mp4') {
+        console.log('Downloading MP4 format, starting conversion...');
         downloadMP4();
     }
 }
@@ -869,57 +873,94 @@ async function downloadMP4() {
     showStatus('Mengonversi video ke MP4 (ini membutuhkan waktu beberapa saat)...', 'info');
     
     try {
-        const { FFmpeg, fetchFile } = FFmpeg;
-        const ffmpeg = new FFmpeg.FFmpeg();
+        // Check if FFmpeg is available
+        if (typeof FFmpeg === 'undefined') {
+            throw new Error('FFmpeg library tidak tersedia. Coba download WebM atau refresh halaman.');
+        }
 
-        // Load FFmpeg
+        const { FFmpeg: FFmpegClass } = FFmpeg;
+        const { fetchFile } = FFmpeg;
+        const ffmpeg = new FFmpegClass();
+
+        console.log('Loading FFmpeg...');
+        // Load FFmpeg with proper core path
         if (!ffmpegLoaded) {
-            await ffmpeg.load();
-            ffmpegLoaded = true;
+            try {
+                await ffmpeg.load();
+                ffmpegLoaded = true;
+                console.log('FFmpeg loaded successfully');
+            } catch (loadError) {
+                console.error('FFmpeg load error:', loadError);
+                throw new Error('Gagal memuat FFmpeg: ' + loadError.message);
+            }
         }
 
         // Create WebM blob first
         const webmBlob = new Blob(recordedBlobs, { type: 'video/webm' });
+        console.log('WebM blob created, size:', webmBlob.size);
         
         // Write WebM file to FFmpeg filesystem
-        await ffmpeg.writeFile('input.webm', new Uint8Array(await webmBlob.arrayBuffer()));
+        console.log('Writing file to FFmpeg...');
+        const arrayBuffer = await webmBlob.arrayBuffer();
+        await ffmpeg.writeFile('input.webm', new Uint8Array(arrayBuffer));
+        console.log('File written successfully');
 
         // Run FFmpeg conversion command
-        await ffmpeg.exec([
+        console.log('Starting FFmpeg conversion...');
+        const conversionResult = await ffmpeg.exec([
             '-i', 'input.webm',
             '-c:v', 'libx264',
             '-preset', 'fast',
             '-crf', '23',
             '-c:a', 'aac',
+            '-y',  // Overwrite output file without asking
             'output.mp4'
         ]);
+        console.log('FFmpeg conversion completed, result:', conversionResult);
 
         // Read output file
+        console.log('Reading output file...');
         const data = await ffmpeg.readFile('output.mp4');
+        console.log('Output file read, size:', data.length);
+        
+        if (!data || data.length === 0) {
+            throw new Error('File MP4 kosong atau gagal dibuat');
+        }
+
         const mp4Blob = new Blob([data.buffer], { type: 'video/mp4' });
+        console.log('MP4 blob created, size:', mp4Blob.size);
         
         // Download MP4
         const url = URL.createObjectURL(mp4Blob);
         const a = document.createElement('a');
         a.style.display = 'none';
         a.href = url;
-        a.download = `route-animation-${new Date().toISOString()}.mp4`;
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        a.download = `route-animation-${timestamp}.mp4`;
         document.body.appendChild(a);
+        
+        console.log('Triggering download...');
         a.click();
 
         // Cleanup
-        await ffmpeg.deleteFile('input.webm');
-        await ffmpeg.deleteFile('output.mp4');
+        console.log('Cleaning up FFmpeg files...');
+        try {
+            await ffmpeg.deleteFile('input.webm');
+            await ffmpeg.deleteFile('output.mp4');
+        } catch (cleanupError) {
+            console.warn('Cleanup warning:', cleanupError);
+        }
 
         setTimeout(() => {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             resetUIAfterRecording();
             showStatus('Video MP4 berhasil diunduh!', 'success');
-        }, 100);
+        }, 200);
 
     } catch (error) {
         console.error('MP4 conversion error:', error);
+        console.error('Error stack:', error.stack);
         showStatus('Error saat mengonversi ke MP4: ' + error.message, 'error');
         resetUIAfterRecording();
     }
