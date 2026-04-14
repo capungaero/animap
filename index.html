@@ -479,14 +479,6 @@
             </select>
         </div>
 
-        <div class="form-group">
-            <label for="videoFormat">Format Video:</label>
-            <select id="videoFormat" class="styled-select">
-                <option value="webm" selected>WebM (.webm)</option>
-                <option value="mp4">MP4 (.mp4)</option>
-            </select>
-        </div>
-
         <div id="videoControls" style="display: none;">
             <div class="button-group">
                 <button id="animateBtn">Mulai Animasi</button>
@@ -509,12 +501,7 @@
     <!-- Leaflet AntPath (working CDN) -->
     <script src="https://cdn.jsdelivr.net/npm/leaflet-ant-path@1.1.2/dist/leaflet-ant-path.umd.min.js"></script>
 
-    <!-- FFmpeg.js - Alternative CDN with better reliability -->
-    <!-- Using unpkg as fallback, with specific working version -->
-    <script async src="https://unpkg.com/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js"></script>
-    <script async src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
-
     <!-- Main Application Script (with cache busting) -->
-    <script src="app.js?v=20260414_v5"></script>
+    <script src="app.js?v=20260414_v6"></script>
 </body>
 </html>
