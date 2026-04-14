@@ -35,6 +35,8 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             z-index: 1000;
             min-width: 300px;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .control-panel h2 {
@@ -180,11 +182,11 @@
 
         /* Video controls section */
         .video-controls {
-            display: none;
+            display: none !important;
         }
 
         .video-controls.active {
-            display: block;
+            display: block !important;
         }
 
         .btn-record {
@@ -395,7 +397,7 @@
     <!-- Leaflet AntPath (working CDN) -->
     <script src="https://cdn.jsdelivr.net/npm/leaflet-ant-path@1.1.2/dist/leaflet-ant-path.umd.min.js"></script>
 
-    <!-- Main Application Script -->
-    <script src="app.js"></script>
+    <!-- Main Application Script (with cache busting) -->
+    <script src="app.js?v=20260414"></script>
 </body>
 </html>

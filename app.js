@@ -267,10 +267,22 @@ function displayRoute(coordinates, startLat, startLon, endLat, endLon) {
 
         // Enable video controls - Make sure the element exists!
         const videoControls = document.getElementById('videoControls');
+        console.log('videoControls element:', videoControls);
+        console.log('videoControls classList before:', videoControls?.classList);
+        
         if (videoControls) {
+            videoControls.classList.remove('active');
+            videoControls.style.display = 'none';
+            
+            // Force repaint
+            void videoControls.offsetHeight;
+            
             videoControls.classList.add('active');
+            videoControls.style.display = 'block';
+            console.log('videoControls classList after:', videoControls.classList);
+            console.log('videoControls style.display:', videoControls.style.display);
         } else {
-            console.error('Video controls element not found!');
+            console.error('Video controls element NOT FOUND!');
         }
 
         showStatus('Route loaded successfully! Select animation options and click "Start Animation".', 'success');
