@@ -12,6 +12,7 @@ let isAnimating = false;
 let isRecording = false;
 let captureInstance = null;
 let animationDuration = 10000; // milliseconds
+let originalAnimationDuration = 10000; // Store original for speed calculations
 let animationSpeed = 1.0;
 let recordedBlobs = [];
 let mapStyleLayers = {};
@@ -260,10 +261,14 @@ function displayRoute(coordinates, startLat, startLon, endLat, endLon) {
         // Store animation duration based on route distance
         if (currentRoute && currentRoute.distance) {
             const distance = currentRoute.distance / 1000; // meters to km
-            animationDuration = Math.max(5000, Math.min(20000, distance * 500)); // Dynamic duration
+            originalAnimationDuration = Math.max(5000, Math.min(20000, distance * 500)); // Dynamic duration
+            animationDuration = originalAnimationDuration;
         } else {
-            animationDuration = 10000; // Default duration
+            originalAnimationDuration = 10000; // Default duration
+            animationDuration = 10000;
         }
+        
+        console.log('Animation duration set to:', animationDuration, 'ms');
 
         // Enable video controls - Make sure the element exists!
         const videoControls = document.getElementById('videoControls');
@@ -323,12 +328,22 @@ function createCarIcon() {
 // Phase 2: Animate Marker Along Route
 // ============================================
 async function animateMarkerAlongRoute() {
-    if (!currentRoute || !animatedMarker) return;
+    if (!currentRoute || !animatedMarker) {
+        console.error('Missing currentRoute or animatedMarker');
+        return;
+    }
 
     isAnimating = true;
     const coordinates = currentRoute.geometry.coordinates.map(coord => [coord[1], coord[0]]);
     const stepCount = coordinates.length;
+    
+    console.log('Starting animation with', stepCount, 'coordinates');
+    console.log('Animation duration:', animationDuration, 'ms');
+    console.log('Animation speed:', animationSpeed);
+    
     const stepDuration = animationDuration / stepCount;
+    console.log('Step duration:', stepDuration, 'ms');
+    
     let currentStep = 0;
 
     return new Promise((resolve) => {
@@ -340,10 +355,15 @@ async function animateMarkerAlongRoute() {
                 // Phase 2: Camera follow with flyTo
                 cameraFollow(lat, lon, currentStep, stepCount);
 
+                if (currentStep % Math.ceil(stepCount / 10) === 0) {
+                    console.log(`Animation progress: ${currentStep}/${stepCount} (${Math.round(currentStep/stepCount*100)}%)`);
+                }
+
                 currentStep++;
             } else {
                 clearInterval(animationInterval);
                 isAnimating = false;
+                console.log('Animation finished!');
                 resolve();
             }
         }, stepDuration / animationSpeed);
@@ -356,12 +376,16 @@ async function animateMarkerAlongRoute() {
 function cameraFollow(lat, lon, currentStep, totalSteps) {
     // Smooth camera movement
     const zoomLevel = calculateDynamicZoom(currentStep, totalSteps);
-    map.setView([lat, lon], zoomLevel, { animate: true, duration: 0.5 });
+    
+    // Use no animation for faster updates, only every 5th step
+    if (currentStep % 5 === 0) {
+        map.setView([lat, lon], zoomLevel, { animate: false });
+    }
 }
 
 function calculateDynamicZoom(step, total) {
     // Start zoomed out, gradually zoom in
-    const progress = step / total;
+    const progress = Math.min(step / total, 1);
     return 12 + (progress * 3); // Zoom from 12 to 15
 }
 
@@ -369,8 +393,20 @@ function calculateDynamicZoom(step, total) {
 // Phase 2: Start Animation Only
 // ============================================
 async function startAnimation() {
+    console.log('startAnimation called');
+    console.log('currentRoute:', currentRoute);
+    console.log('animatedMarker:', animatedMarker);
+    console.log('isAnimating:', isAnimating);
+    
     if (!currentRoute) {
+        console.error('No route available');
         showStatus('Please generate a route first', 'error');
+        return;
+    }
+
+    if (!animatedMarker) {
+        console.error('No animated marker available');
+        showStatus('Animation marker not initialized', 'error');
         return;
     }
 
@@ -379,14 +415,19 @@ async function startAnimation() {
         return;
     }
 
-    showStatus('Animation started...', 'info');
+    showStatus('Animation started... (check console for details)', 'info');
     const animateBtn = document.getElementById('animateBtn');
     animateBtn.disabled = true;
     
-    await animateMarkerAlongRoute();
-    
-    animateBtn.disabled = false;
-    showStatus('Animation complete!', 'success');
+    try {
+        await animateMarkerAlongRoute();
+        animateBtn.disabled = false;
+        showStatus('Animation complete!', 'success');
+    } catch (error) {
+        console.error('Animation error:', error);
+        showStatus('Animation error: ' + error.message, 'error');
+        animateBtn.disabled = false;
+    }
 }
 
 // ============================================
@@ -606,8 +647,10 @@ function updateSpeed(e) {
     animationSpeed = parseFloat(e.target.value);
     document.getElementById('speedValue').textContent = animationSpeed.toFixed(2) + 'x';
     
-    // Adjust animation duration
-    animationDuration = (animationDuration / animationSpeed);
+    // Calculate duration based on speed (faster speed = shorter duration)
+    animationDuration = originalAnimationDuration / animationSpeed;
+    
+    console.log('Animation speed:', animationSpeed, 'Duration:', animationDuration);
 }
 
 // ============================================
