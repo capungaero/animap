@@ -386,6 +386,29 @@
             </select>
         </div>
 
+        <!-- Custom Icon Upload -->
+        <div class="form-group">
+            <label for="customIconUpload">atau Unggah Ikon Kustom (PNG/JPG):</label>
+            <input type="file" id="customIconUpload" accept="image/png, image/jpeg">
+            <img id="customIconPreview" src="" alt="Custom Icon Preview" style="display: none; max-width: 24px; max-height: 24px; margin-top: 5px;">
+        </div>
+
+        <!-- Icon Size Slider -->
+        <div class="slider-group">
+            <label for="iconSizeSlider">
+                Ukuran Ikon
+                <span id="iconSizeValue">20px</span>
+            </label>
+            <input 
+                type="range" 
+                id="iconSizeSlider" 
+                min="16" 
+                max="48" 
+                step="1" 
+                value="20"
+            >
+        </div>
+
         <!-- Animation Speed Slider -->
         <div class="slider-group">
             <label for="speedSlider">
@@ -401,6 +424,10 @@
                 value="1"
             >
         </div>
+
+        <!-- Version Number -->
+        <div class="section-divider"></div>
+        <div id="app-version" style="text-align: center; font-size: 12px; color: #888; margin-top: 15px;"></div>
 
         <!-- Animation & Video Controls -->
         <h2>Opsi Rekaman</h2>

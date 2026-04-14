@@ -20,6 +20,20 @@ let autoZoomActive = false;
 let mapClickMode = null; // 'start' or 'end' for selecting coordinates by clicking
 let selectedIcon = '🚗'; // Default icon
 let mediaRecorder = null; // Global media recorder instance
+let customIconUrl = null; // To store the custom uploaded icon
+let iconSize = 20; // Default icon size
+
+// ============================================
+// Version Control
+// ============================================
+function setAppVersion() {
+    // Version is based on the timestamp of the last update
+    const version = 'v.20260414.2215'; // Manual update on push
+    const versionElement = document.getElementById('app-version');
+    if (versionElement) {
+        versionElement.textContent = `App Version: ${version}`;
+    }
+}
 
 // Tile layer configurations
 const TILE_LAYERS = {
@@ -110,10 +124,14 @@ function setupEventListeners() {
     startInput.addEventListener('keypress', (e) => e.key === 'Enter' && generateRoute());
     endInput.addEventListener('keypress', (e) => e.key === 'Enter' && generateRoute());
     styleSelector.addEventListener('change', changeMapStyle);
-    iconSelector.addEventListener('change', (e) => {
+        document.getElementById('iconSelector').addEventListener('change', (e) => {
         selectedIcon = e.target.value;
+        // When an emoji is selected, disable the custom icon
+        customIconUrl = null; 
+        document.getElementById('customIconUpload').value = ''; // Reset file input
+        document.getElementById('customIconPreview').style.display = 'none';
         if (animatedMarker) {
-            animatedMarker.getElement().innerHTML = selectedIcon;
+            updateMarkerIcon();
         }
     });
     speedSlider.addEventListener('input', updateSpeed);
@@ -123,8 +141,13 @@ function setupEventListeners() {
 
     document.getElementById('recordingAspectRatio').addEventListener('change', updateRecordingAreaOverlay);
 
+    // Icon customization listeners
+    document.getElementById('iconSizeSlider').addEventListener('input', handleIconSizeChange);
+    document.getElementById('customIconUpload').addEventListener('change', handleCustomIconUpload);
+
     // Set initial state on load
     updateRecordingAreaOverlay();
+    setAppVersion(); // Set the version on load
 }
 
 // ============================================
