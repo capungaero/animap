@@ -37,37 +37,24 @@ async function initFFmpeg() {
     }
     
     return new Promise(async (resolve, reject) => {
-        let retries = 3;
-        const maxRetries = 3;
+        let retries = 5;
+        const maxRetries = 5;
         
         const attempt = async () => {
             try {
-                console.log(`FFmpeg init attempt ${maxRetries - retries + 1}/3...`);
+                console.log(`FFmpeg init attempt ${maxRetries - retries + 1}/${maxRetries}...`);
                 
-                // Wait for FFmpeg.js to be available
-                // FFmpeg.js exposes FFmpeg and fetchFile in window
-                if (typeof window !== 'undefined') {
-                    // Check if FFmpeg is available in window
-                    const checkInterval = setInterval(() => {
-                        if (window.FFmpeg) {
-                            clearInterval(checkInterval);
-                        }
-                    }, 100);
-                    
-                    // Wait max 5 seconds for FFmpeg to load
-                    await new Promise(r => setTimeout(r, 500));
+                // Check if FFmpeg is available in window
+                if (!window.FFmpeg) {
+                    throw new Error('window.FFmpeg tidak tersedia');
                 }
                 
-                // Access FFmpeg from window object
-                if (!window.FFmpeg || !window.FFmpeg.FFmpeg) {
+                if (!window.FFmpeg.FFmpeg) {
                     throw new Error('window.FFmpeg.FFmpeg tidak tersedia');
                 }
                 
-                const { FFmpeg: FFmpegClass, fetchFile } = window.FFmpeg;
-                
-                if (!FFmpegClass) {
-                    throw new Error('FFmpeg class tidak ditemukan');
-                }
+                console.log('✓ FFmpeg class tersedia');
+                const FFmpegClass = window.FFmpeg.FFmpeg;
                 
                 console.log('Creating FFmpeg instance...');
                 ffmpegInstance = new FFmpegClass();
@@ -76,27 +63,33 @@ async function initFFmpeg() {
                     throw new Error('Gagal membuat FFmpeg instance');
                 }
                 
-                console.log('Loading FFmpeg core...');
-                await ffmpegInstance.load();
+                console.log('Loading FFmpeg core (ini dapat memakan waktu 10-20 detik)...');
+                showStatus('Loading FFmpeg encoder (dapat memakan waktu beberapa detik)...', 'info');
+                
+                const loadPromise = ffmpegInstance.load();
+                
+                // Add timeout untuk load
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('FFmpeg load timeout (>20 detik)')), 20000)
+                );
+                
+                await Promise.race([loadPromise, timeoutPromise]);
                 
                 ffmpegReady = true;
                 console.log('✅ FFmpeg initialized and ready!');
+                showStatus('✅ FFmpeg siap untuk MP4 conversion', 'success');
                 resolve(ffmpegInstance);
                 
             } catch (error) {
                 retries--;
-                console.error(`❌ FFmpeg init attempt failed (${maxRetries - retries}/${maxRetries}):`, error.message);
-                console.error('Available globals:', {
-                    hasFFmpeg: typeof window.FFmpeg !== 'undefined',
-                    hasFFmpegClass: window.FFmpeg && typeof window.FFmpeg.FFmpeg !== 'undefined',
-                    hasFFmpegUtil: window.FFmpeg && typeof window.FFmpeg.FFmpeg !== 'undefined'
-                });
+                console.error(`❌ FFmpeg init attempt ${maxRetries - retries} failed:`, error.message);
                 
                 if (retries > 0) {
-                    // Retry after 1 second
-                    setTimeout(attempt, 1000);
+                    console.log(`Retrying... (${retries} attempts left)`);
+                    setTimeout(attempt, 2000); // Retry after 2 seconds
                 } else {
-                    reject(new Error(`Gagal init FFmpeg setelah 3 percobaan. Pastikan halaman di-refresh dan tunggu CDN load.`));
+                    const errorMsg = `Gagal init FFmpeg setelah ${maxRetries} percobaan: ${error.message}. Kemungkinan CDN tidak stabil - gunakan WebM format saja.`;
+                    reject(new Error(errorMsg));
                 }
             }
         };
@@ -988,7 +981,7 @@ function downloadWebM() {
 }
 
 async function downloadMP4() {
-    showStatus('Mengonversi video ke MP4 (ini membutuhkan waktu beberapa saat)...', 'info');
+    showStatus('Mengonversi video ke MP4 (dapat memakan waktu 15-60 detik)...', 'info');
     
     try {
         console.log('Starting MP4 download process...');
@@ -1001,14 +994,14 @@ async function downloadMP4() {
             console.log('FFmpeg initialized successfully');
         } catch (initError) {
             console.error('FFmpeg initialization failed:', initError);
-            showStatus(`Gagal: ${initError.message}. Coba download WebM atau refresh halaman.`, 'error');
+            showStatus(`❌ Error MP4: ${initError.message}.\n\n💡 Solusi: Gunakan format WebM sebagai alternatif, atau coba refresh halaman dan tunggu lebih lama.`, 'error');
             resetUIAfterRecording();
             return;
         }
 
         // Create WebM blob first
         const webmBlob = new Blob(recordedBlobs, { type: 'video/webm' });
-        console.log('WebM blob created, size:', webmBlob.size);
+        console.log('WebM blob created, size:', (webmBlob.size / 1024 / 1024).toFixed(2), 'MB');
         
         if (webmBlob.size === 0) {
             throw new Error('WebM blob kosong - tidak ada video data');
@@ -1017,55 +1010,58 @@ async function downloadMP4() {
         // Write WebM file to FFmpeg filesystem
         console.log('Writing file to FFmpeg filesystem...');
         try {
+            showStatus('Uploading video to FFmpeg...', 'info');
             const arrayBuffer = await webmBlob.arrayBuffer();
             await ffmpeg.writeFile('input.webm', new Uint8Array(arrayBuffer));
-            console.log('File written successfully');
+            console.log('✓ File written successfully');
         } catch (writeError) {
             throw new Error(`Error writing file: ${writeError.message}`);
         }
 
         // Run FFmpeg conversion command
         console.log('Starting FFmpeg conversion...');
-        showStatus('Processing: Converting WebM to MP4...', 'info');
+        showStatus('Converting WebM to MP4 (can take 15-30 seconds)...', 'info');
         
         try {
             const result = await ffmpeg.exec([
                 '-i', 'input.webm',
                 '-c:v', 'libx264',
-                '-preset', 'fast',
-                '-crf', '23',
+                '-preset', 'ultrafast',  // Changed from 'fast' to 'ultrafast' for speed
+                '-crf', '28',  // Changed from 23 to 28 for faster conversion
                 '-c:a', 'aac',
+                '-b:a', '128k',
                 '-y',
                 'output.mp4'
             ]);
-            console.log('FFmpeg execution completed, result code:', result);
+            console.log('✓ FFmpeg conversion completed');
         } catch (execError) {
             throw new Error(`FFmpeg conversion failed: ${execError.message}`);
         }
 
         // Read output file
         console.log('Reading output file...');
+        showStatus('Reading generated MP4 file...', 'info');
         let data;
         try {
             data = await ffmpeg.readFile('output.mp4');
-            console.log('Output file read, size:', data?.length || 0);
+            console.log('✓ Output file read, size:', (data?.length / 1024 / 1024).toFixed(2), 'MB');
         } catch (readError) {
             throw new Error(`Error reading output file: ${readError.message}`);
         }
         
         if (!data || data.length === 0) {
-            throw new Error('File MP4 kosong atau gagal dibuat. Coba WebM atau refresh halaman.');
+            throw new Error('File MP4 kosong atau gagal dibuat');
         }
 
         const mp4Blob = new Blob([data.buffer], { type: 'video/mp4' });
-        console.log('MP4 blob created, size:', mp4Blob.size);
+        console.log('✓ MP4 blob created, size:', (mp4Blob.size / 1024 / 1024).toFixed(2), 'MB');
         
         if (mp4Blob.size === 0) {
             throw new Error('MP4 blob kosong setelah konversi');
         }
         
         // Download MP4
-        showStatus('Verifying file and preparing download...', 'info');
+        showStatus('Preparing download...', 'info');
         
         try {
             const url = URL.createObjectURL(mp4Blob);
@@ -1090,7 +1086,7 @@ async function downloadMP4() {
                     console.warn('Could not remove element:', e);
                 }
                 window.URL.revokeObjectURL(url);
-            }, 500);
+            }, 1000);
             
         } catch (downloadError) {
             throw new Error(`Error during download: ${downloadError.message}`);
@@ -1100,14 +1096,14 @@ async function downloadMP4() {
         console.log('Cleaning up FFmpeg files...');
         try {
             await ffmpeg.deleteFile('input.webm');
-            console.log('Deleted input.webm');
+            console.log('✓ Deleted input.webm');
         } catch (e) {
             console.warn('Warning deleting input.webm:', e);
         }
         
         try {
             await ffmpeg.deleteFile('output.mp4');
-            console.log('Deleted output.mp4');
+            console.log('✓ Deleted output.mp4');
         } catch (e) {
             console.warn('Warning deleting output.mp4:', e);
         }
@@ -1119,7 +1115,7 @@ async function downloadMP4() {
     } catch (error) {
         console.error('MP4 conversion error:', error);
         console.error('Error stack:', error.stack);
-        showStatus(`❌ Error MP4: ${error.message}. Coba download WebM atau refresh halaman.`, 'error');
+        showStatus(`❌ Error MP4: ${error.message}\n\n💡 Tips: Jika terus gagal, gunakan format WebM (lebih reliable) atau coba refresh halaman.`, 'error');
         resetUIAfterRecording();
     }
 }
@@ -1215,24 +1211,27 @@ document.addEventListener('DOMContentLoaded', () => {
 // Monitor FFmpeg CDN loading
 function monitorFFmpegLoading() {
     let checkCount = 0;
-    const maxChecks = 30; // Check for 30 seconds
+    const maxChecks = 50; // Check for 50 seconds (longer timeout for loading)
     
     const checkInterval = setInterval(() => {
         checkCount++;
         
         if (window.FFmpeg && window.FFmpeg.FFmpeg) {
             console.log('✅ FFmpeg library loaded successfully');
+            console.log('FFmpeg version:', window.FFmpeg.FFmpeg.version || 'unknown');
             clearInterval(checkInterval);
+            showStatus('✅ FFmpeg tersedia untuk MP4 conversion', 'success');
             return;
         }
         
         if (checkCount % 5 === 0) {
-            console.log(`⏳ Waiting for FFmpeg... (${checkCount}s)`);
+            console.log(`⏳ Menunggu FFmpeg... (${checkCount}s)`);
         }
         
         if (checkCount >= maxChecks) {
             clearInterval(checkInterval);
-            console.warn('⚠️ FFmpeg didnt load dalam 30 detik. MP4 mungkin tidak akan bekerja. Coba refresh halaman.');
+            console.warn('⚠️ FFmpeg tidak load dalam 50 detik. MP4 tidak akan tersedia. Gunakan WebM saja.');
+            showStatus('⚠️ MP4 tidak tersedia (FFmpeg CDN tidak responsif). Gunakan WebM format saja.', 'warning');
         }
     }, 1000);
 }
@@ -1251,6 +1250,7 @@ function updateRecordingAreaOverlay() {
 
     let mapWidth = mapContainer.offsetWidth;
     let mapHeight = mapContainer.offsetHeight;
+    const controlPanelWidth = 350; // Width of the control panel
     
     let boxWidth, boxHeight, boxTop, boxLeft;
 
@@ -1277,6 +1277,6 @@ function updateRecordingAreaOverlay() {
     overlay.style.width = `${boxWidth}px`;
     overlay.style.height = `${boxHeight}px`;
     overlay.style.top = `${boxTop}px`;
-    overlay.style.left = `${boxLeft}px`;
+    overlay.style.left = `${controlPanelWidth + boxLeft}px`;
     overlay.style.display = 'block';
 }
