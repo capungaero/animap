@@ -502,46 +502,57 @@ async function startAnimation() {
 }
 
 // ============================================
-// Phase 3: Video Recording with CCapture
+// Phase 3: Video Recording Logic
 // ============================================
-async function handleRecordClick() {
+function handleRecordClick() {
     if (!currentRoute) {
         showStatus('Please generate a route first', 'error');
         return;
     }
-
-    if (isRecording) {
-        stopRecording();
-        return;
-    }
-
+    // The startRecording function will now handle all logic
     startRecording();
 }
 
 async function startRecording() {
+    const recordBtn = document.getElementById('recordBtn');
+    const animateBtn = document.getElementById('animateBtn');
+    const exportBtn = document.getElementById('downloadBtn');
+    const recordingIndicator = document.getElementById('recordingIndicator');
+
+    if (isRecording) {
+        console.log("Recording is already in progress.");
+        return;
+    }
+
+    // --- Start Recording ---
     isRecording = true;
     recordedBlobs = [];
     
-    const recordBtn = document.getElementById('recordBtn');
-    const animateBtn = document.getElementById('animateBtn');
-    const recordingIndicator = document.getElementById('recordingIndicator');
+    // Update UI to 'recording' state
     recordBtn.textContent = 'Recording...';
     recordBtn.disabled = true;
     animateBtn.disabled = true;
+    exportBtn.disabled = true;
     recordingIndicator.classList.add('active');
-
-    showStatus('Recording akan dimulai dalam 1 detik...', 'info');
+    showStatus('Recording akan dimulai...', 'info');
     console.log('Recording sequence initiated');
 
     try {
         await recordAnimation();
-        
-        // Show download dialog
+        // If successful, enable download button
+        exportBtn.disabled = false;
         showDownloadDialog();
     } catch (error) {
         console.error('Recording error:', error);
         showStatus('Recording error: ' + error.message, 'error');
-        stopRecording();
+    } finally {
+        // --- Reset UI State ---
+        isRecording = false;
+        recordBtn.textContent = 'Rekam Animasi';
+        recordBtn.disabled = false;
+        animateBtn.disabled = false;
+        recordingIndicator.classList.remove('active');
+        console.log("UI has been reset to idle state.");
     }
 }
 
