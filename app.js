@@ -184,7 +184,8 @@ function parseCoordinates(input) {
 // ============================================
 function displayRoute(coordinates, startLat, startLon, endLat, endLon) {
     try {
-        clearRoute();
+        // Clear only visual elements, NOT the route data
+        clearVisualElements();
 
         // Add start marker
         startMarker = L.circleMarker([startLat, startLon], {
@@ -656,20 +657,37 @@ function updateSpeed(e) {
 // ============================================
 // Utility Functions
 // ============================================
-function clearRoute() {
+function clearVisualElements() {
+    // Clear only visual elements, keep route data
     if (startMarker) map.removeLayer(startMarker);
     if (endMarker) map.removeLayer(endMarker);
     if (animatedMarker) map.removeLayer(animatedMarker);
     if (currentPolyline) map.removeLayer(currentPolyline);
     if (currentAntPath) map.removeLayer(currentAntPath);
 
-    currentRoute = null;
+    startMarker = null;
+    endMarker = null;
+    animatedMarker = null;
     currentPolyline = null;
     currentAntPath = null;
+}
+
+function clearRoute() {
+    // Clear all including route data
+    clearVisualElements();
+    
+    currentRoute = null;
     recordedBlobs = [];
+    animationDuration = 10000;
+    originalAnimationDuration = 10000;
+    animationSpeed = 1.0;
+    isAnimating = false;
+    isRecording = false;
 
     document.getElementById('videoControls').classList.remove('active');
     document.getElementById('downloadBtn').disabled = true;
+    
+    console.log('Route cleared completely');
 }
 
 function showStatus(message, type = 'info') {
