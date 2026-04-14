@@ -548,19 +548,52 @@ async function recordAnimation() {
         throw new Error('Map container #map not found');
     }
 
+    // Get recording options from UI
+    const quality = parseInt(document.getElementById('recordingQuality').value, 10);
+    const fps = parseInt(document.getElementById('recordingFps').value, 10);
+    const aspectRatio = document.getElementById('recordingAspectRatio').value;
+    console.log(`Recording options: Quality=${quality / 1000000}Mbps, FPS=${fps}, Aspect Ratio=${aspectRatio}`);
+
+    // Determine recording canvas dimensions based on aspect ratio
+    let recWidth = mapContainer.offsetWidth;
+    let recHeight = mapContainer.offsetHeight;
+    let sourceX = 0;
+    let sourceY = 0;
+    let sourceWidth = recWidth;
+    let sourceHeight = recHeight;
+
+    if (aspectRatio === '16:9') {
+        recHeight = Math.round(recWidth / (16 / 9));
+        // Capture from the vertical center of the map
+        sourceY = (sourceHeight - recHeight) / 2;
+        sourceHeight = recHeight;
+    } else if (aspectRatio === '1:1') {
+        if (recWidth > recHeight) { // Landscape window
+            recWidth = recHeight;
+            // Capture from the horizontal center
+            sourceX = (sourceWidth - recWidth) / 2;
+            sourceWidth = recWidth;
+        } else { // Portrait window
+            recHeight = recWidth;
+            // Capture from the vertical center
+            sourceY = (sourceHeight - recHeight) / 2;
+            sourceHeight = recHeight;
+        }
+    }
+
     // Create a canvas to draw the captured frames onto
     const recordCanvas = document.createElement('canvas');
-    recordCanvas.width = mapContainer.offsetWidth;
-    recordCanvas.height = mapContainer.offsetHeight;
+    recordCanvas.width = recWidth;
+    recordCanvas.height = recHeight;
     const recordCtx = recordCanvas.getContext('2d');
     console.log(`Recording canvas created: ${recordCanvas.width}x${recordCanvas.height}`);
 
     // Set up the video stream and recorder
-    const stream = recordCanvas.captureStream(30); // 30 FPS
+    const stream = recordCanvas.captureStream(fps);
     recordedBlobs = [];
     mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'video/webm',
-        videoBitsPerSecond: 3000000, // Increased bitrate for better quality
+        videoBitsPerSecond: quality,
     });
 
     let frameCount = 0;
@@ -580,7 +613,7 @@ async function recordAnimation() {
 
     // --- Frame Capture Loop using html2canvas ---
     let isCapturing = true;
-    const frameInterval = 1000 / 30; // 30 FPS interval
+    const frameInterval = 1000 / fps;
 
     const captureFrameLoop = async () => {
         if (!isCapturing) return;
@@ -595,8 +628,8 @@ async function recordAnimation() {
                 logging: false,
                 scale: 1, // Capture at native resolution
             });
-            // Draw the captured image onto our recording canvas
-            recordCtx.drawImage(canvas, 0, 0);
+            // Draw the captured image onto our recording canvas, applying the crop for aspect ratio
+            recordCtx.drawImage(canvas, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, recWidth, recHeight);
             frameCount++;
 
         } catch (error) {

@@ -377,10 +377,35 @@
         </div>
 
         <!-- Animation & Video Controls -->
-        <div class="section-divider"></div>
-        <div class="video-controls" id="videoControls">
+        <h2>Opsi Rekaman</h2>
+        <div class="form-group">
+            <label for="recordingQuality">Kualitas Video:</label>
+            <select id="recordingQuality" class="styled-select">
+                <option value="1000000">Rendah (1 Mbps)</option>
+                <option value="2500000" selected>Sedang (2.5 Mbps)</option>
+                <option value="5000000">Tinggi (5 Mbps)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="recordingFps">Frame Rate:</label>
+            <select id="recordingFps" class="styled-select">
+                <option value="15">15 FPS</option>
+                <option value="30" selected>30 FPS</option>
+                <option value="60">60 FPS</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="recordingAspectRatio">Aspek Rasio:</label>
+            <select id="recordingAspectRatio" class="styled-select">
+                <option value="auto" selected>Otomatis (Ukuran Layar)</option>
+                <option value="16:9">16:9 (HD Video)</option>
+                <option value="1:1">1:1 (Persegi)</option>
+            </select>
+        </div>
+
+        <div id="videoControls" style="display: none;">
             <div class="button-group">
-                <button class="btn-success" id="animateBtn">Start Animation</button>
+                <button id="animateBtn">Mulai Animasi</button>
             </div>
             <div class="button-group">
                 <button class="btn-record" id="recordBtn">Record Animation</button>
