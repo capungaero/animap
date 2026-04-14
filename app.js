@@ -26,18 +26,22 @@ const TILE_LAYERS = {
     'cartodb-positron': L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
         maxZoom: 19,
+        crossOrigin: 'anonymous'
     }),
     'cartodb-voyager': L.tileLayer('https://{s}.basemaps.cartocdn.com/raster_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
         maxZoom: 19,
+        crossOrigin: 'anonymous'
     }),
     'osm': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19,
+        crossOrigin: 'anonymous'
     }),
     'satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri',
         maxZoom: 19,
+        crossOrigin: 'anonymous'
     }),
 };
 
@@ -535,121 +539,98 @@ async function startRecording() {
 }
 
 async function recordAnimation() {
-    // Wait 1 second before recording
-    console.log('Waiting 1 second before recording...');
-    await sleep(1000);
-    
-    showStatus('Recording started! Animasi akan dimulai...', 'info');
-    console.log('Starting actual recording');
+    console.log('Starting recording sequence...');
+    await sleep(1000); // Initial delay
+    showStatus('Recording starting...', 'info');
 
     const mapContainer = document.getElementById('map');
     if (!mapContainer) {
-        throw new Error('Map container not found');
+        throw new Error('Map container #map not found');
     }
 
-    // Get the Leaflet canvas
-    let sourceCanvas = document.querySelector('.leaflet-canvas-container canvas');
-    if (!sourceCanvas) {
-        const allCanvases = mapContainer.querySelectorAll('canvas');
-        if (allCanvases.length > 0) {
-            sourceCanvas = allCanvases[0];
-        }
-    }
+    // Create a canvas to draw the captured frames onto
+    const recordCanvas = document.createElement('canvas');
+    recordCanvas.width = mapContainer.offsetWidth;
+    recordCanvas.height = mapContainer.offsetHeight;
+    const recordCtx = recordCanvas.getContext('2d');
+    console.log(`Recording canvas created: ${recordCanvas.width}x${recordCanvas.height}`);
 
-    if (!sourceCanvas) {
-        throw new Error('Canvas not found');
-    }
-
-    console.log(`Source canvas: ${sourceCanvas.width}x${sourceCanvas.height}`);
-
-    // Create recording canvas
-    const recCanvas = document.createElement('canvas');
-    recCanvas.width = sourceCanvas.width;
-    recCanvas.height = sourceCanvas.height;
-    const recCtx = recCanvas.getContext('2d');
-
-    console.log(`Recording canvas: ${recCanvas.width}x${recCanvas.height}`);
-
-    // Get capture stream
-    let stream;
-    try {
-        stream = recCanvas.captureStream(30);
-        console.log('Capture stream created');
-    } catch (error) {
-        console.error('Stream error:', error);
-        throw new Error('Recording not supported');
-    }
-
-    // Setup recorder
+    // Set up the video stream and recorder
+    const stream = recordCanvas.captureStream(30); // 30 FPS
     recordedBlobs = [];
     mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'video/webm',
-        videoBitsPerSecond: 2500000,
+        videoBitsPerSecond: 3000000, // Increased bitrate for better quality
     });
 
+    let frameCount = 0;
     let chunkCount = 0;
     mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
             recordedBlobs.push(event.data);
             chunkCount++;
-            console.log(`Chunk ${chunkCount}: ${event.data.size}`);
         }
     };
+    mediaRecorder.onstop = () => console.log(`Recording stopped. Total chunks: ${chunkCount}`);
+    mediaRecorder.onerror = (event) => console.error('MediaRecorder error:', event.error);
 
-    mediaRecorder.onerror = (err) => {
-        console.error('Recorder error:', err);
-    };
+    // Start the recorder
+    mediaRecorder.start();
+    console.log('MediaRecorder started');
 
-    // Start recording
-    mediaRecorder.start(100);
-    console.log('Recording started');
-
-    // Frame capture loop
+    // --- Frame Capture Loop using html2canvas ---
     let isCapturing = true;
-    let frames = 0;
+    const frameInterval = 1000 / 30; // 30 FPS interval
 
-    const captureFrame = () => {
+    const captureFrameLoop = async () => {
         if (!isCapturing) return;
 
+        const startTime = performance.now();
         try {
-            // Draw Leaflet canvas to recording canvas
-            recCtx.drawImage(sourceCanvas, 0, 0);
-            frames++;
-        } catch (err) {
-            console.warn('Draw error:', err);
+            // Capture the entire #map div
+            const canvas = await html2canvas(mapContainer, {
+                useCORS: true,
+                logging: false,
+                scale: 1, // Capture at native resolution
+            });
+            // Draw the captured image onto our recording canvas
+            recordCtx.drawImage(canvas, 0, 0);
+            frameCount++;
+
+        } catch (error) {
+            console.warn('Frame capture failed:', error);
+            // Stop capturing on error to prevent a loop of failures
+            isCapturing = false;
         }
 
-        requestAnimationFrame(captureFrame);
+        const duration = performance.now() - startTime;
+        // Adjust timeout to maintain FPS, but don't go below 0
+        const timeout = Math.max(0, frameInterval - duration);
+        setTimeout(captureFrameLoop, timeout);
     };
 
-    // Start capturing frames
-    captureFrame();
-
-    // Run animation
-    showStatus('🎥 Recording... Animasi sedang berjalan...', 'info');
+    // Start the capture loop and the animation simultaneously
+    captureFrameLoop();
+    showStatus('🎥 Recording...', 'info');
     console.log('Animation starting...');
     await animateMarkerAlongRoute();
-    console.log('Animation finished!');
+    console.log('Animation finished.');
 
-    // Wait 2 seconds
-    showStatus('Menunggu 2 detik untuk menyelesaikan recording...', 'info');
+    // Wait for a couple of seconds to capture the end state
+    showStatus('Finalizing video...', 'info');
     await sleep(2000);
 
-    // Stop capturing
+    // Stop capturing frames and then stop the recorder
     isCapturing = false;
-    await sleep(500);
-
-    // Stop recorder
-    mediaRecorder.requestData();
-    await sleep(100);
+    await sleep(500); // Allow final frames to process
     mediaRecorder.stop();
-    await sleep(500);
+    await sleep(500); // Allow onstop to fire
 
-    console.log(`Done: ${chunkCount} chunks, ${frames} frames`);
-    showStatus('Recording selesai! Video siap diunduh.', 'success');
+    console.log(`Recording finished. Captured ${frameCount} frames.`);
+    showStatus('Recording complete!', 'success');
 
     if (recordedBlobs.length === 0) {
-        throw new Error('No video data captured');
+        throw new Error('No video data was captured. This may be a browser or security issue.');
     }
 }
 
