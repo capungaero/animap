@@ -326,7 +326,7 @@ function createCarIcon() {
 }
 
 // ============================================
-// Phase 2: Animate Marker Along Route
+// Phase 2: Animate Marker Along Route (Smooth with RAF)
 // ============================================
 async function animateMarkerAlongRoute() {
     if (!currentRoute || !animatedMarker) {
@@ -336,58 +336,123 @@ async function animateMarkerAlongRoute() {
 
     isAnimating = true;
     const coordinates = currentRoute.geometry.coordinates.map(coord => [coord[1], coord[0]]);
-    const stepCount = coordinates.length;
+    const totalDistance = calculateTotalDistance(coordinates);
     
-    console.log('Starting animation with', stepCount, 'coordinates');
+    console.log('Starting smooth animation with', coordinates.length, 'coordinates');
+    console.log('Total route distance:', totalDistance.toFixed(2), 'km');
     console.log('Animation duration:', animationDuration, 'ms');
     console.log('Animation speed:', animationSpeed);
     
-    const stepDuration = animationDuration / stepCount;
-    console.log('Step duration:', stepDuration, 'ms');
-    
-    let currentStep = 0;
+    const startTime = Date.now();
+    let lastCameraUpdate = 0;
+    const CAMERA_UPDATE_INTERVAL = 100; // Update camera every 100ms
 
     return new Promise((resolve) => {
-        const animationInterval = setInterval(() => {
-            if (currentStep < stepCount) {
-                const [lat, lon] = coordinates[currentStep];
-                animatedMarker.setLatLng([lat, lon]);
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const adjustedDuration = animationDuration / animationSpeed;
+            const progress = Math.min(elapsed / adjustedDuration, 1);
 
-                // Phase 2: Camera follow with flyTo
-                cameraFollow(lat, lon, currentStep, stepCount);
+            // Get smooth position along route using interpolation
+            const position = getPositionAlongRoute(coordinates, progress);
+            
+            if (position) {
+                animatedMarker.setLatLng(position);
 
-                if (currentStep % Math.ceil(stepCount / 10) === 0) {
-                    console.log(`Animation progress: ${currentStep}/${stepCount} (${Math.round(currentStep/stepCount*100)}%)`);
+                // Update camera less frequently to reduce jitter
+                const now = Date.now();
+                if (now - lastCameraUpdate >= CAMERA_UPDATE_INTERVAL) {
+                    cameraFollowSmooth(position[0], position[1], progress);
+                    lastCameraUpdate = now;
                 }
 
-                currentStep++;
+                if (Math.round(progress * 100) % 10 === 0) {
+                    console.log(`Animation progress: ${Math.round(progress * 100)}%`);
+                }
+            }
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
             } else {
-                clearInterval(animationInterval);
                 isAnimating = false;
                 console.log('Animation finished!');
                 resolve();
             }
-        }, stepDuration / animationSpeed);
+        };
+
+        requestAnimationFrame(animate);
     });
 }
 
-// ============================================
-// Phase 2: Camera Follow Function
-// ============================================
-function cameraFollow(lat, lon, currentStep, totalSteps) {
-    // Smooth camera movement
-    const zoomLevel = calculateDynamicZoom(currentStep, totalSteps);
-    
-    // Use no animation for faster updates, only every 5th step
-    if (currentStep % 5 === 0) {
-        map.setView([lat, lon], zoomLevel, { animate: false });
+// Helper: Calculate total distance of route (for reference)
+function calculateTotalDistance(coordinates) {
+    let distance = 0;
+    for (let i = 1; i < coordinates.length; i++) {
+        const [lat1, lon1] = coordinates[i - 1];
+        const [lat2, lon2] = coordinates[i];
+        distance += getDistance(lat1, lon1, lat2, lon2);
     }
+    return distance;
 }
 
-function calculateDynamicZoom(step, total) {
-    // Start zoomed out, gradually zoom in
-    const progress = Math.min(step / total, 1);
-    return 12 + (progress * 3); // Zoom from 12 to 15
+// Helper: Haversine distance calculation (in km)
+function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Earth's radius in km
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+// Helper: Get smooth position along route using linear interpolation
+function getPositionAlongRoute(coordinates, progress) {
+    if (coordinates.length === 0) return null;
+    if (progress <= 0) return coordinates[0];
+    if (progress >= 1) return coordinates[coordinates.length - 1];
+
+    // Find which segment of the route we're on
+    const index = progress * (coordinates.length - 1);
+    const segmentIndex = Math.floor(index);
+    const segmentProgress = index - segmentIndex;
+
+    if (segmentIndex >= coordinates.length - 1) {
+        return coordinates[coordinates.length - 1];
+    }
+
+    const start = coordinates[segmentIndex];
+    const end = coordinates[segmentIndex + 1];
+
+    // Linear interpolation between two points
+    const lat = start[0] + (end[0] - start[0]) * segmentProgress;
+    const lon = start[1] + (end[1] - start[1]) * segmentProgress;
+
+    return [lat, lon];
+}
+
+// ============================================
+// Phase 2: Camera Follow Function (Smooth)
+// ============================================
+function cameraFollowSmooth(lat, lon, progress) {
+    // Smooth camera movement with easing
+    const zoomLevel = calculateDynamicZoom(progress);
+    
+    // Use non-animated pan for smoother visual
+    map.setView([lat, lon], zoomLevel, { animate: false });
+}
+
+function cameraFollow(lat, lon, currentStep, totalSteps) {
+    // Legacy function - kept for compatibility
+    const progress = Math.min(currentStep / totalSteps, 1);
+    cameraFollowSmooth(lat, lon, progress);
+}
+
+function calculateDynamicZoom(progress) {
+    // Smooth zoom: start at 12, end at 15
+    return 12 + (Math.min(progress, 1) * 3);
 }
 
 // ============================================
