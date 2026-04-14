@@ -135,6 +135,12 @@
             display: block;
         }
 
+        .status-message.warning {
+            background: #fff3cd;
+            color: #856404;
+            display: block;
+        }
+
         /* Style selector section */
         .section-divider {
             border-top: 1px solid #ddd;
@@ -189,12 +195,30 @@
             background: #c82333;
         }
 
-        .btn-download {
+        .btn-success {
             background: #28a745;
         }
 
-        .btn-download:hover {
+        .btn-success:hover {
             background: #218838;
+        }
+
+        .btn-success:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-download {
+            background: #17a2b8;
+        }
+
+        .btn-download:hover {
+            background: #138496;
+        }
+
+        .btn-download:disabled {
+            background: #ccc;
+            cursor: not-allowed;
         }
 
         .recording-indicator {
@@ -293,6 +317,44 @@
             </select>
         </div>
 
+        <!-- Icon Selector -->
+        <div class="section-divider"></div>
+        <div class="form-group">
+            <label for="iconSelector">Icon untuk Animasi</label>
+            <select id="iconSelector">
+                <option value="🚗">🚗 Mobil Merah</option>
+                <option value="🚕">🚕 Taxi Kuning</option>
+                <option value="🚙">🚙 SUV</option>
+                <option value="🚌">🚌 Bus</option>
+                <option value="🚎">🚎 Bus Hijau</option>
+                <option value="🚐">🚐 Minibus</option>
+                <option value="🚚">🚚 Truk</option>
+                <option value="🚛">🚛 Truk Besar</option>
+                <option value="🚜">🚜 Traktor</option>
+                <option value="🏎️">🏎️ Race Car</option>
+                <option value="🚓">🚓 Polisi</option>
+                <option value="🚑">🚑 Ambulans</option>
+                <option value="🚒">🚒 Fire Truck</option>
+                <option value="🛵">🛵 Motor</option>
+                <option value="🏍️">🏍️ Motorcycle</option>
+                <option value="🚲">🚲 Sepeda</option>
+                <option value="🛴">🛴 Skateboard</option>
+                <option value="✈️">✈️ Pesawat</option>
+                <option value="🚁">🚁 Helikopter</option>
+                <option value="🛸">🛸 UFO</option>
+                <option value="🚀">🚀 Rocket</option>
+                <option value="⛵">⛵ Perahu</option>
+                <option value="🛥️">🛥️ Speedboat</option>
+                <option value="🚢">🚢 Kapal</option>
+                <option value="🐎">🐎 Kuda</option>
+                <option value="🐘">🐘 Gajah</option>
+                <option value="🦁">🦁 Singa</option>
+                <option value="🐓">🐓 Ayam</option>
+                <option value="👤">👤 Manusia</option>
+                <option value="🤖">🤖 Robot</option>
+            </select>
+        </div>
+
         <!-- Animation Speed Slider -->
         <div class="slider-group">
             <label for="speedSlider">
@@ -309,14 +371,17 @@
             >
         </div>
 
-        <!-- Video Controls -->
+        <!-- Animation & Video Controls -->
         <div class="section-divider"></div>
         <div class="video-controls" id="videoControls">
             <div class="button-group">
-                <button class="btn-record" id="recordBtn">Record Video</button>
+                <button class="btn-success" id="animateBtn">Start Animation</button>
             </div>
             <div class="button-group">
-                <button class="btn-download" id="downloadBtn" disabled>Download Video</button>
+                <button class="btn-record" id="recordBtn">Record Animation</button>
+            </div>
+            <div class="button-group">
+                <button class="btn-download" id="downloadBtn" disabled>Export Video</button>
             </div>
             <div class="recording-indicator" id="recordingIndicator">
                 ● Recording...

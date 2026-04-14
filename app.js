@@ -17,6 +17,8 @@ let recordedBlobs = [];
 let mapStyleLayers = {};
 let autoZoomActive = false;
 let mapClickMode = null; // 'start' or 'end' for selecting coordinates by clicking
+let selectedIcon = '🚗'; // Default icon
+let mediaRecorder = null; // Global media recorder instance
 
 // Tile layer configurations
 const TILE_LAYERS = {
@@ -90,7 +92,9 @@ function setupEventListeners() {
     const startInput = document.getElementById('startPoint');
     const endInput = document.getElementById('endPoint');
     const styleSelector = document.getElementById('styleSelector');
+    const iconSelector = document.getElementById('iconSelector');
     const speedSlider = document.getElementById('speedSlider');
+    const animateBtn = document.getElementById('animateBtn');
     const recordBtn = document.getElementById('recordBtn');
     const downloadBtn = document.getElementById('downloadBtn');
 
@@ -99,7 +103,12 @@ function setupEventListeners() {
     startInput.addEventListener('keypress', (e) => e.key === 'Enter' && generateRoute());
     endInput.addEventListener('keypress', (e) => e.key === 'Enter' && generateRoute());
     styleSelector.addEventListener('change', changeMapStyle);
+    iconSelector.addEventListener('change', (e) => {
+        selectedIcon = e.target.value;
+        showStatus(`Icon changed to ${selectedIcon}`, 'info');
+    });
     speedSlider.addEventListener('input', updateSpeed);
+    animateBtn.addEventListener('click', startAnimation);
     recordBtn.addEventListener('click', handleRecordClick);
     downloadBtn.addEventListener('click', downloadVideo);
 }
@@ -257,23 +266,23 @@ function createCarIcon() {
     return L.divIcon({
         html: `
             <div style="
-                width: 30px;
-                height: 30px;
+                width: 40px;
+                height: 40px;
                 background: #ff6600;
                 border: 2px solid #333;
-                border-radius: 4px;
+                border-radius: 6px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 20px;
+                font-size: 28px;
                 color: white;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                box-shadow: 0 2px 6px rgba(0,0,0,0.4);
                 transform: rotate(90deg);
-            ">🚗</div>
+            ">${selectedIcon}</div>
         `,
         className: 'custom-marker-icon',
-        iconSize: [30, 30],
-        iconAnchor: [15, 15],
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
     });
 }
 
@@ -324,6 +333,30 @@ function calculateDynamicZoom(step, total) {
 }
 
 // ============================================
+// Phase 2: Start Animation Only
+// ============================================
+async function startAnimation() {
+    if (!currentRoute) {
+        showStatus('Please generate a route first', 'error');
+        return;
+    }
+
+    if (isAnimating) {
+        showStatus('Animation already running', 'warning');
+        return;
+    }
+
+    showStatus('Animation started...', 'info');
+    const animateBtn = document.getElementById('animateBtn');
+    animateBtn.disabled = true;
+    
+    await animateMarkerAlongRoute();
+    
+    animateBtn.disabled = false;
+    showStatus('Animation complete!', 'success');
+}
+
+// ============================================
 // Phase 3: Video Recording with CCapture
 // ============================================
 async function handleRecordClick() {
@@ -345,12 +378,14 @@ async function startRecording() {
     recordedBlobs = [];
     
     const recordBtn = document.getElementById('recordBtn');
+    const animateBtn = document.getElementById('animateBtn');
     const recordingIndicator = document.getElementById('recordingIndicator');
     recordBtn.textContent = 'Stop Recording';
-    recordBtn.disabled = true;
+    recordBtn.disabled = false;
+    animateBtn.disabled = true;
     recordingIndicator.classList.add('active');
 
-    showStatus('Recording started... [0%]', 'info');
+    showStatus('Recording animation... Press "Stop Recording" to finish.', 'info');
 
     // Try to capture using Leaflet's canvas element
     const leafletCanvas = document.querySelector('.leaflet-canvas-container canvas');
@@ -367,7 +402,7 @@ async function startRecording() {
 function recordUsingCanvasStream(canvas) {
     try {
         const stream = canvas.captureStream(30); // 30 FPS
-        const mediaRecorder = new MediaRecorder(stream, {
+        mediaRecorder = new MediaRecorder(stream, {
             mimeType: 'video/webm;codecs=vp9',
             videoBitsPerSecond: 5000000, // 5 Mbps
         });
@@ -393,6 +428,11 @@ function recordUsingCanvasStream(canvas) {
         console.error('Canvas stream capture failed:', error);
         showStatus('Canvas capture unavailable. Try a different browser.', 'error');
         isRecording = false;
+        const recordBtn = document.getElementById('recordBtn');
+        const animateBtn = document.getElementById('animateBtn');
+        recordBtn.textContent = 'Record Animation';
+        recordBtn.disabled = false;
+        animateBtn.disabled = false;
     }
 }
 
@@ -476,15 +516,17 @@ function stopRecording() {
     isAnimating = false;
     
     const recordBtn = document.getElementById('recordBtn');
+    const animateBtn = document.getElementById('animateBtn');
     const downloadBtn = document.getElementById('downloadBtn');
     const recordingIndicator = document.getElementById('recordingIndicator');
     
-    recordBtn.textContent = 'Record Video';
+    recordBtn.textContent = 'Record Animation';
     recordBtn.disabled = false;
+    animateBtn.disabled = false;
     recordingIndicator.classList.remove('active');
     downloadBtn.disabled = recordedBlobs.length === 0;
 
-    showStatus('Recording complete! Click "Download Video" to save.', 'success');
+    showStatus('Recording complete! Click "Export Video" to download.', 'success');
 }
 
 // ============================================
