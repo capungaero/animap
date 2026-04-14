@@ -45,7 +45,9 @@ const TILE_LAYERS = {
 // Initialize Map
 // ============================================
 function initializeMap() {
-    map = L.map('map').setView([-6.2088, 106.8456], 12);
+    map = L.map('map', {
+        preferCanvas: true  // Ensure canvas rendering is used
+    }).setView([-6.2088, 106.8456], 12);
     
     // Add default tile layer
     const defaultLayer = TILE_LAYERS['cartodb-positron'];
@@ -540,15 +542,35 @@ async function recordAnimation() {
     showStatus('Recording started! Animasi akan dimulai...', 'info');
     console.log('Starting actual recording');
 
-    // Get map container and canvas
+    // Get map container
     const mapContainer = document.getElementById('map');
-    const mapCanvas = document.querySelector('.leaflet-canvas-container canvas');
-    
-    if (!mapContainer || !mapCanvas) {
-        throw new Error('Map or canvas not found');
+    if (!mapContainer) {
+        throw new Error('Map container not found');
     }
 
-    console.log(`Map canvas size: ${mapCanvas.width}x${mapCanvas.height}`);
+    // Try to find Leaflet canvas - check multiple possible locations
+    let mapCanvas = document.querySelector('.leaflet-canvas-container canvas');
+    
+    if (!mapCanvas) {
+        console.warn('Canvas not found in .leaflet-canvas-container, searching alternatives...');
+        // Try all canvases in the map
+        const allCanvases = mapContainer.querySelectorAll('canvas');
+        console.log(`Found ${allCanvases.length} canvas elements in map`);
+        
+        if (allCanvases.length > 0) {
+            mapCanvas = allCanvases[0];
+            console.log('Using first canvas found');
+        }
+    }
+    
+    if (!mapCanvas) {
+        // If still no canvas, create a recording using the map element
+        console.warn('No canvas found - Leaflet may be using SVG rendering');
+        console.log('Falling back to html2canvas approach');
+        throw new Error('Canvas rendering not available. Leaflet may be using SVG mode.');
+    }
+
+    console.log(`Map canvas found: ${mapCanvas.width}x${mapCanvas.height}`);
     console.log(`Map container size: ${mapContainer.offsetWidth}x${mapContainer.offsetHeight}`);
 
     // Use map canvas directly for recording
