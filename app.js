@@ -540,27 +540,24 @@ async function recordAnimation() {
     showStatus('Recording started! Animasi akan dimulai...', 'info');
     console.log('Starting actual recording');
 
-    // Get map container for canvas size
+    // Get map container and canvas
     const mapContainer = document.getElementById('map');
-    if (!mapContainer) {
-        throw new Error('Map container not found');
+    const mapCanvas = document.querySelector('.leaflet-canvas-container canvas');
+    
+    if (!mapContainer || !mapCanvas) {
+        throw new Error('Map or canvas not found');
     }
 
-    // Create recording canvas
-    const recordCanvas = document.createElement('canvas');
-    const ctx = recordCanvas.getContext('2d', { willReadFrequently: true });
-    
-    recordCanvas.width = mapContainer.offsetWidth;
-    recordCanvas.height = mapContainer.offsetHeight;
-    
-    console.log(`Recording canvas size: ${recordCanvas.width}x${recordCanvas.height}`);
+    console.log(`Map canvas size: ${mapCanvas.width}x${mapCanvas.height}`);
+    console.log(`Map container size: ${mapContainer.offsetWidth}x${mapContainer.offsetHeight}`);
 
-    // Get capture stream
+    // Use map canvas directly for recording
     let stream;
     try {
-        stream = recordCanvas.captureStream(30); // 30 FPS
-        console.log('Canvas stream created');
+        stream = mapCanvas.captureStream(30); // 30 FPS
+        console.log('Direct canvas stream created');
     } catch (error) {
+        console.error('Direct stream failed:', error);
         throw new Error('Video recording not supported. Try Chrome, Firefox, or Edge.');
     }
 
@@ -571,75 +568,71 @@ async function recordAnimation() {
     });
 
     let recordingSize = 0;
+    let chunkCount = 0;
+    
     mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
             recordedBlobs.push(event.data);
             recordingSize += event.data.size;
-            console.log(`Chunk: ${event.data.size}, Total: ${recordingSize}`);
+            chunkCount++;
+            console.log(`Chunk ${chunkCount}: ${event.data.size} bytes, Total: ${recordingSize}`);
         }
+    };
+
+    mediaRecorder.onstart = () => {
+        console.log('MediaRecorder STARTED');
+    };
+
+    mediaRecorder.onstop = () => {
+        console.log('MediaRecorder STOPPED. Total chunks:', chunkCount, 'Total size:', recordingSize);
     };
 
     mediaRecorder.onerror = (event) => {
         console.error('MediaRecorder error:', event.error);
     };
 
-    mediaRecorder.start(100); // Request data every 100ms
-    console.log('Media recording started');
+    // Start recording
+    mediaRecorder.start(500); // Request data every 500ms
+    console.log('Media recording started, waiting for data collection...');
 
-    // Frame rendering loop
-    let isCapturing = true;
-    let frameCount = 0;
-    const fps = 30;
-    const frameDuration = 1000 / fps;
-    let lastFrameTime = Date.now();
-
-    const renderFrame = () => {
-        if (!isCapturing || !isRecording) {
-            return;
-        }
-
-        const now = Date.now();
-        if (now - lastFrameTime >= frameDuration) {
-            // Draw map canvas to recording canvas
-            try {
-                const mapCanvas = document.querySelector('.leaflet-canvas-container canvas');
-                if (mapCanvas) {
-                    ctx.clearRect(0, 0, recordCanvas.width, recordCanvas.height);
-                    ctx.drawImage(mapCanvas, 0, 0, recordCanvas.width, recordCanvas.height);
-                    frameCount++;
-                }
-            } catch (error) {
-                console.warn('Frame render error:', error);
-            }
-
-            lastFrameTime = now;
-        }
-
-        requestAnimationFrame(renderFrame);
-    };
-
-    // Start rendering frames
-    renderFrame();
+    // Wait for media recorder to be ready
+    await sleep(100);
 
     // Run animation
     showStatus('🎥 Recording... Animasi sedang berjalan...', 'info');
+    console.log('Animation starting...');
     await animateMarkerAlongRoute();
-    
-    // Wait 2 seconds after animation completes
+    console.log('Animation finished!');
+
+    // Wait 2 seconds after animation completes to capture tail
     console.log('Animation finished, waiting 2 seconds before stopping record...');
     showStatus('Menunggu 2 detik untuk menyelesaikan recording...', 'info');
     await sleep(2000);
 
-    // Stop capturing
-    isCapturing = false;
+    // Request final data dump
+    mediaRecorder.requestData();
+    console.log('Requested final data dump');
+    
+    // Wait a bit for final data
+    await sleep(500);
 
     // Stop media recorder
     if (mediaRecorder.state === 'recording') {
         mediaRecorder.stop();
+        console.log('MediaRecorder stopped');
     }
 
-    console.log(`Recording finished: ${frameCount} frames, ${recordingSize} bytes`);
+    // Final data dump
+    await sleep(500);
+    mediaRecorder.requestData();
+
+    console.log(`Recording finished: ${chunkCount} chunks, ${recordingSize} bytes`);
     showStatus('Recording selesai! Video siap diunduh.', 'success');
+
+    if (recordedBlobs.length === 0) {
+        console.warn('WARNING: No blobs recorded!');
+        throw new Error('No video data was captured. Please check browser console.');
+    }
 }
 
 // Helper sleep function
