@@ -344,8 +344,6 @@ async function animateMarkerAlongRoute() {
     console.log('Animation speed:', animationSpeed);
     
     const startTime = Date.now();
-    let lastCameraUpdate = 0;
-    const CAMERA_UPDATE_INTERVAL = 100; // Update camera every 100ms
 
     return new Promise((resolve) => {
         const animate = () => {
@@ -357,14 +355,8 @@ async function animateMarkerAlongRoute() {
             const position = getPositionAlongRoute(coordinates, progress);
             
             if (position) {
+                // ONLY animate the marker, keep map static
                 animatedMarker.setLatLng(position);
-
-                // Update camera less frequently to reduce jitter
-                const now = Date.now();
-                if (now - lastCameraUpdate >= CAMERA_UPDATE_INTERVAL) {
-                    cameraFollowSmooth(position[0], position[1], progress);
-                    lastCameraUpdate = now;
-                }
 
                 if (Math.round(progress * 100) % 10 === 0) {
                     console.log(`Animation progress: ${Math.round(progress * 100)}%`);
