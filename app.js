@@ -583,6 +583,9 @@ async function recordAnimation() {
         throw new Error('Video recording not supported. Try Chrome, Firefox, or Edge.');
     }
 
+    // Clear any previous blobs
+    recordedBlobs = [];
+
     // Create media recorder
     mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'video/webm',
@@ -593,6 +596,7 @@ async function recordAnimation() {
     let chunkCount = 0;
     
     mediaRecorder.ondataavailable = (event) => {
+        console.log(`ondataavailable fired, data size: ${event.data.size}`);
         if (event.data.size > 0) {
             recordedBlobs.push(event.data);
             recordingSize += event.data.size;
@@ -613,12 +617,12 @@ async function recordAnimation() {
         console.error('MediaRecorder error:', event.error);
     };
 
-    // Start recording
-    mediaRecorder.start(500); // Request data every 500ms
-    console.log('Media recording started, waiting for data collection...');
+    // Start recording FIRST before animation
+    mediaRecorder.start(100); // Request data every 100ms for better capture
+    console.log('Media recording started');
 
-    // Wait for media recorder to be ready
-    await sleep(100);
+    // Small delay to ensure recorder is ready
+    await sleep(200);
 
     // Run animation
     showStatus('🎥 Recording... Animasi sedang berjalan...', 'info');
@@ -631,22 +635,19 @@ async function recordAnimation() {
     showStatus('Menunggu 2 detik untuk menyelesaikan recording...', 'info');
     await sleep(2000);
 
-    // Request final data dump
+    // Request final data dump BEFORE stopping
+    console.log('Requesting final data dump...');
     mediaRecorder.requestData();
-    console.log('Requested final data dump');
     
-    // Wait a bit for final data
+    // Wait a bit for final data to arrive
     await sleep(500);
 
-    // Stop media recorder
-    if (mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
-        console.log('MediaRecorder stopped');
-    }
-
-    // Final data dump
+    // Now stop media recorder
+    console.log('Stopping MediaRecorder...');
+    mediaRecorder.stop();
+    
+    // Wait for stop to complete
     await sleep(500);
-    mediaRecorder.requestData();
 
     console.log(`Recording finished: ${chunkCount} chunks, ${recordingSize} bytes`);
     showStatus('Recording selesai! Video siap diunduh.', 'success');
