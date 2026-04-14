@@ -22,6 +22,7 @@ let selectedIcon = '🚗'; // Default icon
 let mediaRecorder = null; // Global media recorder instance
 let customIconUrl = null; // To store the custom uploaded icon
 let iconSize = 20; // Default icon size
+let iconRotation = 90; // Default rotation in degrees
 
 // ============================================
 // Version Control
@@ -143,6 +144,7 @@ function setupEventListeners() {
 
     // Icon customization listeners
     document.getElementById('iconSizeSlider').addEventListener('input', handleIconSizeChange);
+    document.getElementById('iconRotationSlider').addEventListener('input', handleIconRotationChange);
     document.getElementById('customIconUpload').addEventListener('change', handleCustomIconUpload);
 
     // Set initial state on load
@@ -347,7 +349,7 @@ function createCarIcon() {
                 width: ${iconSize}px;
                 height: ${iconSize}px;
                 display: block;
-                transform: rotate(90deg);
+                transform: rotate(${iconRotation}deg);
             " alt="Custom Icon">
         `;
     } else {
@@ -366,7 +368,7 @@ function createCarIcon() {
                 font-size: ${fontSize}px;
                 color: white;
                 box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-                transform: rotate(90deg);
+                transform: rotate(${iconRotation}deg);
                 overflow: hidden;
             ">${selectedIcon}</div>
         `;
@@ -421,6 +423,18 @@ function handleCustomIconUpload(e) {
         }
     };
     reader.readAsDataURL(file);
+}
+
+// Handle icon rotation slider change
+function handleIconRotationChange(e) {
+    iconRotation = parseInt(e.target.value);
+    document.getElementById('iconRotationValue').textContent = iconRotation + '°';
+    console.log('Icon rotation changed to:', iconRotation);
+    
+    // Update existing marker if it exists
+    if (animatedMarker) {
+        updateMarkerIcon();
+    }
 }
 
 // ============================================
