@@ -24,7 +24,6 @@ let customIconUrl = null; // To store the custom uploaded icon
 let iconSize = 20; // Default icon size
 let iconRotation = 90; // Default rotation in degrees
 let videoFormat = 'webm'; // Video format: 'webm' or 'mp4'
-let ffmpegLoaded = false; // Track if FFmpeg is loaded
 let ffmpegReady = false; // Track if FFmpeg is initialized and ready
 let ffmpegInstance = null; // Global FFmpeg instance
 
@@ -32,7 +31,8 @@ let ffmpegInstance = null; // Global FFmpeg instance
 // FFmpeg Initialization Handler
 // ============================================
 async function initFFmpeg() {
-    if (ffmpegReady) {
+    if (ffmpegReady && ffmpegInstance) {
+        console.log('FFmpeg already initialized, reusing instance');
         return ffmpegInstance;
     }
     
@@ -42,34 +42,61 @@ async function initFFmpeg() {
         
         const attempt = async () => {
             try {
-                // Check if FFmpeg is available
-                if (typeof FFmpeg === 'undefined') {
-                    throw new Error('FFmpeg library tidak ditemukan di global scope');
+                console.log(`FFmpeg init attempt ${maxRetries - retries + 1}/3...`);
+                
+                // Wait for FFmpeg.js to be available
+                // FFmpeg.js exposes FFmpeg and fetchFile in window
+                if (typeof window !== 'undefined') {
+                    // Check if FFmpeg is available in window
+                    const checkInterval = setInterval(() => {
+                        if (window.FFmpeg) {
+                            clearInterval(checkInterval);
+                        }
+                    }, 100);
+                    
+                    // Wait max 5 seconds for FFmpeg to load
+                    await new Promise(r => setTimeout(r, 500));
                 }
                 
-                const { FFmpeg: FFmpegClass } = FFmpeg;
+                // Access FFmpeg from window object
+                if (!window.FFmpeg || !window.FFmpeg.FFmpeg) {
+                    throw new Error('window.FFmpeg.FFmpeg tidak tersedia');
+                }
+                
+                const { FFmpeg: FFmpegClass, fetchFile } = window.FFmpeg;
+                
                 if (!FFmpegClass) {
-                    throw new Error('FFmpeg class tidak tersedia');
+                    throw new Error('FFmpeg class tidak ditemukan');
                 }
                 
-                console.log('Initializing FFmpeg instance...');
+                console.log('Creating FFmpeg instance...');
                 ffmpegInstance = new FFmpegClass();
+                
+                if (!ffmpegInstance) {
+                    throw new Error('Gagal membuat FFmpeg instance');
+                }
                 
                 console.log('Loading FFmpeg core...');
                 await ffmpegInstance.load();
                 
                 ffmpegReady = true;
-                console.log('FFmpeg initialized and ready!');
+                console.log('✅ FFmpeg initialized and ready!');
                 resolve(ffmpegInstance);
+                
             } catch (error) {
                 retries--;
-                console.error(`FFmpeg init attempt failed (${maxRetries - retries}/${maxRetries}):`, error.message);
+                console.error(`❌ FFmpeg init attempt failed (${maxRetries - retries}/${maxRetries}):`, error.message);
+                console.error('Available globals:', {
+                    hasFFmpeg: typeof window.FFmpeg !== 'undefined',
+                    hasFFmpegClass: window.FFmpeg && typeof window.FFmpeg.FFmpeg !== 'undefined',
+                    hasFFmpegUtil: window.FFmpeg && typeof window.FFmpeg.FFmpeg !== 'undefined'
+                });
                 
                 if (retries > 0) {
                     // Retry after 1 second
                     setTimeout(attempt, 1000);
                 } else {
-                    reject(new Error(`Gagal init FFmpeg setelah 3 percobaan: ${error.message}`));
+                    reject(new Error(`Gagal init FFmpeg setelah 3 percobaan. Pastikan halaman di-refresh dan tunggu CDN load.`));
                 }
             }
         };
@@ -890,6 +917,7 @@ function showDownloadDialog() {
 
 function downloadVideo() {
     console.log('downloadVideo called, videoFormat:', videoFormat);
+    console.log('recordedBlobs count:', recordedBlobs.length);
     
     if (recordedBlobs.length === 0) {
         alert('Tidak ada video untuk diunduh.');
@@ -900,7 +928,18 @@ function downloadVideo() {
         console.log('Downloading WebM format...');
         downloadWebM();
     } else if (videoFormat === 'mp4') {
-        console.log('Downloading MP4 format, starting conversion...');
+        console.log('Downloading MP4 format, checking FFmpeg availability...');
+        
+        // Check if FFmpeg is available
+        if (!window.FFmpeg || !window.FFmpeg.FFmpeg) {
+            showStatus('⚠️ FFmpeg belum siap. Coba WebM atau tunggu sebentar lalu coba MP4 lagi.', 'warning');
+            console.warn('FFmpeg not available in window, available:', {
+                hasFFmpeg: typeof window.FFmpeg,
+                FFmpegKeys: window.FFmpeg ? Object.keys(window.FFmpeg) : 'N/A'
+            });
+            return;
+        }
+        
         downloadMP4();
     }
 }
@@ -1165,9 +1204,38 @@ function showStatus(message, type = 'info') {
 // Initialize on Page Load
 // ============================================
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('Page loaded, initializing app...');
     initializeMap();
     setupEventListeners();
+    
+    // Monitor FFmpeg loading status
+    monitorFFmpegLoading();
 });
+
+// Monitor FFmpeg CDN loading
+function monitorFFmpegLoading() {
+    let checkCount = 0;
+    const maxChecks = 30; // Check for 30 seconds
+    
+    const checkInterval = setInterval(() => {
+        checkCount++;
+        
+        if (window.FFmpeg && window.FFmpeg.FFmpeg) {
+            console.log('✅ FFmpeg library loaded successfully');
+            clearInterval(checkInterval);
+            return;
+        }
+        
+        if (checkCount % 5 === 0) {
+            console.log(`⏳ Waiting for FFmpeg... (${checkCount}s)`);
+        }
+        
+        if (checkCount >= maxChecks) {
+            clearInterval(checkInterval);
+            console.warn('⚠️ FFmpeg didnt load dalam 30 detik. MP4 mungkin tidak akan bekerja. Coba refresh halaman.');
+        }
+    }, 1000);
+}
 
 function updateRecordingAreaOverlay() {
     const overlay = document.getElementById('recording-area-overlay');

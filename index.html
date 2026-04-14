@@ -506,10 +506,13 @@
     <!-- Leaflet AntPath (working CDN) -->
     <script src="https://cdn.jsdelivr.net/npm/leaflet-ant-path@1.1.2/dist/leaflet-ant-path.umd.min.js"></script>
 
-    <!-- FFmpeg.js for video conversion -->
-    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"></script>
+    <!-- FFmpeg.js Core and Util - Must load before app.js -->
+    <script async src="https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/ffmpeg-core.js"></script>
+    
+    <!-- FFmpeg.js Main Library - Exposes FFmpeg and fetchFile to window -->
+    <script async src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/umd/ffmpeg.min.js"></script>
 
     <!-- Main Application Script (with cache busting) -->
-    <script src="app.js?v=20260414_v3"></script>
+    <script src="app.js?v=20260414_v4"></script>
 </body>
 </html>
