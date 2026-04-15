@@ -1402,6 +1402,40 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Page loaded, initializing app...');
     initializeMap();
     setupEventListeners();
+
+    // Menu utama berbasis ikon: submenu popup
+    const menuIcons = [
+        { btn: 'menuIcon1', submenu: 'submenu1' },
+        { btn: 'menuIcon2', submenu: 'submenu2' },
+        { btn: 'menuIcon3', submenu: 'submenu3' }
+    ];
+
+    menuIcons.forEach(({ btn, submenu }) => {
+        const btnEl = document.getElementById(btn);
+        const submenuEl = document.getElementById(submenu);
+        if (btnEl && submenuEl) {
+            btnEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Tutup semua submenu lain
+                menuIcons.forEach(({ submenu: otherSub }) => {
+                    if (otherSub !== submenu) {
+                        const el = document.getElementById(otherSub);
+                        if (el) el.classList.remove('active');
+                    }
+                });
+                // Toggle submenu aktif
+                submenuEl.classList.toggle('active');
+            });
+        }
+    });
+
+    // Tutup submenu jika klik di luar menu
+    document.addEventListener('click', (e) => {
+        menuIcons.forEach(({ submenu }) => {
+            const el = document.getElementById(submenu);
+            if (el) el.classList.remove('active');
+        });
+    });
 });
 
 function updateRecordingAreaOverlay() {
