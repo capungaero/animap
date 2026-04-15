@@ -1402,6 +1402,45 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Page loaded, initializing app...');
     initializeMap();
     setupEventListeners();
+
+    // Setup collapsible category menu
+    const categoryMenu = document.getElementById('categoryMenu');
+    if (categoryMenu) {
+        const menuItems = categoryMenu.querySelectorAll('.menu-item');
+        
+        menuItems.forEach((item, index) => {
+            const btn = item.querySelector('.menu-item-header');
+            const content = item.querySelector('.menu-item-content');
+            
+            if (btn && content) {
+                // Expand first item by default
+                if (index === 0) {
+                    btn.classList.add('active');
+                    content.classList.add('active');
+                }
+                
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    
+                    // Close other open categories
+                    menuItems.forEach((other) => {
+                        if (other !== item) {
+                            const otherBtn = other.querySelector('.menu-item-header');
+                            const otherContent = other.querySelector('.menu-item-content');
+                            if (otherBtn && otherContent) {
+                                otherBtn.classList.remove('active');
+                                otherContent.classList.remove('active');
+                            }
+                        }
+                    });
+                    
+                    // Toggle current category
+                    btn.classList.toggle('active');
+                    content.classList.toggle('active');
+                });
+            }
+        });
+    }
 });
 
 function updateRecordingAreaOverlay() {

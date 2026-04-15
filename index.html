@@ -73,7 +73,8 @@
         .menu-item-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-start;
+            gap: 10px;
             padding: 12px 15px;
             background: #f8f9fa;
             cursor: pointer;
@@ -96,17 +97,23 @@
         }
 
         .menu-item-icon {
-            margin-right: 8px;
             font-size: 16px;
+            min-width: 20px;
+        }
+
+        .menu-item-header span:nth-child(2) {
+            flex: 1;
         }
 
         .menu-item-chevron {
             font-size: 12px;
             transition: transform 0.3s ease;
+            min-width: 12px;
+            text-align: right;
         }
 
         .menu-item-header.active .menu-item-chevron {
-            transform: rotate(-180deg);
+            transform: rotate(180deg);
         }
 
         .menu-item-content {
@@ -664,234 +671,261 @@
     </div>
 
     <div class="control-panel">
-        <h2>Route Generator</h2>
-        
-        <!-- Input Section -->
-        <div class="form-group">
-            <label for="startPoint">Titik Awal (Start)</label>
-            <div class="location-input-wrapper">
-                <input 
-                    type="text" 
-                    id="startPoint" 
-                    placeholder="e.g., -6.2088,106.8456 atau ketik nama kota"
-                    autocomplete="off"
-                >
-                <div class="autocomplete-suggestions" id="startSuggestions"></div>
+        <!-- Category Menu -->
+        <nav class="menu-nav" id="categoryMenu">
+            <!-- 1. Route Generator -->
+            <div class="menu-item">
+                <button class="menu-item-header" id="categoryBtn1">
+                    <span class="menu-item-icon">🗺️</span>
+                    <span>Route Generator</span>
+                    <span class="menu-item-chevron">▼</span>
+                </button>
+                <div class="menu-item-content" id="categoryContent1">
+                    <div class="form-group">
+                        <label for="startPoint">Titik Awal (Start)</label>
+                        <div class="location-input-wrapper">
+                            <input 
+                                type="text" 
+                                id="startPoint" 
+                                placeholder="e.g., -6.2088,106.8456 atau ketik nama kota"
+                                autocomplete="off"
+                            >
+                            <div class="autocomplete-suggestions" id="startSuggestions"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="endPoint">Titik Tujuan (Destination)</label>
+                        <div class="location-input-wrapper">
+                            <input 
+                                type="text" 
+                                id="endPoint" 
+                                placeholder="e.g., -6.1751,106.8291 atau ketik nama kota"
+                                autocomplete="off"
+                            >
+                            <div class="autocomplete-suggestions" id="endSuggestions"></div>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-primary" id="generateBtn">Generate Route</button>
+                        <button class="btn-secondary" id="clearBtn">Clear</button>
+                    </div>
+
+                    <div class="status-message" id="statusMessage"></div>
+                </div>
             </div>
-        </div>
 
-        <div class="form-group">
-            <label for="endPoint">Titik Tujuan (Destination)</label>
-            <div class="location-input-wrapper">
-                <input 
-                    type="text" 
-                    id="endPoint" 
-                    placeholder="e.g., -6.1751,106.8291 atau ketik nama kota"
-                    autocomplete="off"
-                >
-                <div class="autocomplete-suggestions" id="endSuggestions"></div>
+            <!-- 2. Map and Icon -->
+            <div class="menu-item">
+                <button class="menu-item-header" id="categoryBtn2">
+                    <span class="menu-item-icon">🎨</span>
+                    <span>Map and Icon</span>
+                    <span class="menu-item-chevron">▼</span>
+                </button>
+                <div class="menu-item-content" id="categoryContent2">
+                    <div class="form-group">
+                        <label for="styleSelector">Map Style</label>
+                        <select id="styleSelector">
+                            <option value="cartodb-positron">CartoDB Positron (Default)</option>
+                            <option value="cartodb-voyager">CartoDB Voyager</option>
+                            <option value="osm">OpenStreetMap</option>
+                            <option value="satellite">Satellite</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="iconSelector">Icon untuk Animasi</label>
+                        <select id="iconSelector">
+                            <option value="🚗">🚗 Mobil Merah</option>
+                            <option value="🚕">🚕 Taxi Kuning</option>
+                            <option value="🚙">🚙 SUV</option>
+                            <option value="🚌">🚌 Bus</option>
+                            <option value="🚎">🚎 Bus Hijau</option>
+                            <option value="🚐">🚐 Minibus</option>
+                            <option value="🚚">🚚 Truk</option>
+                            <option value="🚛">🚛 Truk Besar</option>
+                            <option value="🚜">🚜 Traktor</option>
+                            <option value="🏎️">🏎️ Race Car</option>
+                            <option value="🚓">🚓 Polisi</option>
+                            <option value="🚑">🚑 Ambulans</option>
+                            <option value="🚒">🚒 Fire Truck</option>
+                            <option value="🛵">🛵 Motor</option>
+                            <option value="🏍️">🏍️ Motorcycle</option>
+                            <option value="🚲">🚲 Sepeda</option>
+                            <option value="🛴">🛴 Skateboard</option>
+                            <option value="✈️">✈️ Pesawat</option>
+                            <option value="🚁">🚁 Helikopter</option>
+                            <option value="🛸">🛸 UFO</option>
+                            <option value="🚀">🚀 Rocket</option>
+                            <option value="⛵">⛵ Perahu</option>
+                            <option value="🛥️">🛥️ Speedboat</option>
+                            <option value="🚢">🚢 Kapal</option>
+                            <option value="🐎">🐎 Kuda</option>
+                            <option value="🐘">🐘 Gajah</option>
+                            <option value="🦁">🦁 Singa</option>
+                            <option value="🐓">🐓 Ayam</option>
+                            <option value="👤">👤 Manusia</option>
+                            <option value="🤖">🤖 Robot</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customIconUpload">Unggah Ikon Kustom (PNG/JPG):</label>
+                        <input type="file" id="customIconUpload" accept="image/png, image/jpeg">
+                        <img id="customIconPreview" src="" alt="Custom Icon Preview" style="display: none; max-width: 24px; max-height: 24px; margin-top: 5px;">
+                    </div>
+
+                    <div class="slider-group">
+                        <label for="iconSizeSlider">
+                            Ukuran Ikon
+                            <span id="iconSizeValue">20px</span>
+                        </label>
+                        <input 
+                            type="range" 
+                            id="iconSizeSlider" 
+                            min="16" 
+                            max="200" 
+                            step="1" 
+                            value="20"
+                        >
+                    </div>
+
+                    <div class="slider-group">
+                        <label for="iconRotationSlider">
+                            Rotasi Ikon
+                            <span id="iconRotationValue">90°</span>
+                        </label>
+                        <input 
+                            type="range" 
+                            id="iconRotationSlider" 
+                            min="0" 
+                            max="360" 
+                            step="1" 
+                            value="90"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="iconAnimationEffect">Efek Animasi Ikon</label>
+                        <select id="iconAnimationEffect" class="styled-select">
+                            <option value="none">Tidak Ada</option>
+                            <option value="sway">🌊 Goyang</option>
+                            <option value="spin">🔄 Berputar</option>
+                            <option value="bounce">⬆️ Lompat</option>
+                        </select>
+                    </div>
+
+                    <div class="slider-group">
+                        <label for="iconAnimationSpeedSlider">
+                            Kecepatan Animasi Ikon
+                            <span id="iconAnimationSpeedValue">1.0s</span>
+                        </label>
+                        <input 
+                            type="range" 
+                            id="iconAnimationSpeedSlider" 
+                            min="0.5" 
+                            max="3" 
+                            step="0.1" 
+                            value="1"
+                        >
+                    </div>
+
+                    <div class="slider-group">
+                        <label for="speedSlider">
+                            Animation Speed
+                            <span id="speedValue">1.0x</span>
+                        </label>
+                        <input 
+                            type="range" 
+                            id="speedSlider" 
+                            min="0.1" 
+                            max="3" 
+                            step="0.1" 
+                            value="1"
+                        >
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <div class="button-group">
-            <button class="btn-primary" id="generateBtn">Generate Route</button>
-            <button class="btn-secondary" id="clearBtn">Clear</button>
-        </div>
+            <!-- 3. Custom Location -->
+            <div class="menu-item">
+                <button class="menu-item-header" id="categoryBtn3">
+                    <span class="menu-item-icon">📍</span>
+                    <span>Custom Location</span>
+                    <span class="menu-item-chevron">▼</span>
+                </button>
+                <div class="menu-item-content" id="categoryContent3">
+                    <div class="button-group">
+                        <button class="btn-primary" id="addPlaceBtn" style="width: 100%;">+ Tambah Tempat</button>
+                    </div>
+                    <button class="btn-secondary" id="clearPlacesBtn" style="width: 100%; margin-top: 8px;">Hapus Semua Tempat</button>
+                    <div id="placeStatusMessage" class="status-message"></div>
 
-        <div class="status-message" id="statusMessage"></div>
+                    <div style="padding: 8px; background: #e7f3ff; border-radius: 4px; font-size: 12px; color: #0066cc; margin-top: 10px;">
+                        💡 Klik tombol di atas, lalu klik pada peta untuk menambahkan tempat. Marker dapat digeser.
+                    </div>
+                </div>
+            </div>
 
-        <!-- Style Selector -->
-        <div class="section-divider"></div>
-        <div class="form-group">
-            <label for="styleSelector">Map Style</label>
-            <select id="styleSelector">
-                <option value="cartodb-positron">CartoDB Positron (Default)</option>
-                <option value="cartodb-voyager">CartoDB Voyager</option>
-                <option value="osm">OpenStreetMap</option>
-                <option value="satellite">Satellite</option>
-            </select>
-        </div>
+            <!-- 4. Opsi Rekaman -->
+            <div class="menu-item">
+                <button class="menu-item-header" id="categoryBtn4">
+                    <span class="menu-item-icon">🎬</span>
+                    <span>Opsi Rekaman</span>
+                    <span class="menu-item-chevron">▼</span>
+                </button>
+                <div class="menu-item-content" id="categoryContent4">
+                    <div class="form-group">
+                        <label for="recordingQuality">Bitrate Video</label>
+                        <select id="recordingQuality" class="styled-select">
+                            <option value="20000000">20 Mbps</option>
+                            <option value="25000000">25 Mbps</option>
+                            <option value="30000000" selected>30 Mbps</option>
+                            <option value="35000000">35 Mbps</option>
+                            <option value="40000000">40 Mbps</option>
+                            <option value="45000000">45 Mbps</option>
+                            <option value="50000000">50 Mbps</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="recordingFps">Frame Rate:</label>
+                        <select id="recordingFps" class="styled-select">
+                            <option value="15">15 FPS</option>
+                            <option value="30" selected>30 FPS</option>
+                            <option value="60">60 FPS</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="recordingAspectRatio">Aspek Rasio:</label>
+                        <select id="recordingAspectRatio" class="styled-select">
+                            <option value="auto" selected>Otomatis (Ukuran Layar)</option>
+                            <option value="16:9">16:9 (HD Video)</option>
+                            <option value="1:1">1:1 (Persegi)</option>
+                        </select>
+                    </div>
 
-        <!-- Icon Selector -->
-        <div class="section-divider"></div>
-        <div class="form-group">
-            <label for="iconSelector">Icon untuk Animasi</label>
-            <select id="iconSelector">
-                <option value="🚗">🚗 Mobil Merah</option>
-                <option value="🚕">🚕 Taxi Kuning</option>
-                <option value="🚙">🚙 SUV</option>
-                <option value="🚌">🚌 Bus</option>
-                <option value="🚎">🚎 Bus Hijau</option>
-                <option value="🚐">🚐 Minibus</option>
-                <option value="🚚">🚚 Truk</option>
-                <option value="🚛">🚛 Truk Besar</option>
-                <option value="🚜">🚜 Traktor</option>
-                <option value="🏎️">🏎️ Race Car</option>
-                <option value="🚓">🚓 Polisi</option>
-                <option value="🚑">🚑 Ambulans</option>
-                <option value="🚒">🚒 Fire Truck</option>
-                <option value="🛵">🛵 Motor</option>
-                <option value="🏍️">🏍️ Motorcycle</option>
-                <option value="🚲">🚲 Sepeda</option>
-                <option value="🛴">🛴 Skateboard</option>
-                <option value="✈️">✈️ Pesawat</option>
-                <option value="🚁">🚁 Helikopter</option>
-                <option value="🛸">🛸 UFO</option>
-                <option value="🚀">🚀 Rocket</option>
-                <option value="⛵">⛵ Perahu</option>
-                <option value="🛥️">🛥️ Speedboat</option>
-                <option value="🚢">🚢 Kapal</option>
-                <option value="🐎">🐎 Kuda</option>
-                <option value="🐘">🐘 Gajah</option>
-                <option value="🦁">🦁 Singa</option>
-                <option value="🐓">🐓 Ayam</option>
-                <option value="👤">👤 Manusia</option>
-                <option value="🤖">🤖 Robot</option>
-            </select>
-        </div>
-
-        <!-- Custom Icon Upload -->
-        <div class="form-group">
-            <label for="customIconUpload">atau Unggah Ikon Kustom (PNG/JPG):</label>
-            <input type="file" id="customIconUpload" accept="image/png, image/jpeg">
-            <img id="customIconPreview" src="" alt="Custom Icon Preview" style="display: none; max-width: 24px; max-height: 24px; margin-top: 5px;">
-        </div>
-
-        <!-- Icon Size Slider -->
-        <div class="slider-group">
-            <label for="iconSizeSlider">
-                Ukuran Ikon
-                <span id="iconSizeValue">20px</span>
-            </label>
-            <input 
-                type="range" 
-                id="iconSizeSlider" 
-                min="16" 
-                max="200" 
-                step="1" 
-                value="20"
-            >
-        </div>
-
-        <!-- Icon Rotation Slider -->
-        <div class="slider-group">
-            <label for="iconRotationSlider">
-                Rotasi Ikon
-                <span id="iconRotationValue">90°</span>
-            </label>
-            <input 
-                type="range" 
-                id="iconRotationSlider" 
-                min="0" 
-                max="360" 
-                step="1" 
-                value="90"
-            >
-        </div>
-
-        <!-- Icon Animation Effect -->
-        <div class="form-group">
-            <label for="iconAnimationEffect">Efek Animasi Ikon</label>
-            <select id="iconAnimationEffect" class="styled-select">
-                <option value="none">Tidak Ada</option>
-                <option value="sway">🌊 Goyang</option>
-                <option value="spin">🔄 Berputar</option>
-                <option value="bounce">⬆️ Lompat</option>
-            </select>
-        </div>
-
-        <!-- Icon Animation Speed Slider -->
-        <div class="slider-group">
-            <label for="iconAnimationSpeedSlider">
-                Kecepatan Animasi Ikon
-                <span id="iconAnimationSpeedValue">1.0s</span>
-            </label>
-            <input 
-                type="range" 
-                id="iconAnimationSpeedSlider" 
-                min="0.5" 
-                max="3" 
-                step="0.1" 
-                value="1"
-            >
-        </div>
-
-        <!-- Animation Speed Slider -->
-        <div class="slider-group">
-            <label for="speedSlider">
-                Animation Speed
-                <span id="speedValue">1.0x</span>
-            </label>
-            <input 
-                type="range" 
-                id="speedSlider" 
-                min="0.1" 
-                max="3" 
-                step="0.1" 
-                value="1"
-            >
-        </div>
-
-        <!-- Add Location/Place Menu -->
-        <div class="section-divider"></div>
-        <div class="button-group">
-            <button class="btn-primary" id="addPlaceBtn" style="width: 100%;">+ Tambah Tempat</button>
-        </div>
-        <button class="btn-secondary" id="clearPlacesBtn" style="width: 100%; margin-top: 8px;">Hapus Semua Tempat</button>
-        <div id="placeStatusMessage" class="status-message"></div>
-
-        <div style="padding: 8px; background: #e7f3ff; border-radius: 4px; font-size: 12px; color: #0066cc; margin-top: 10px;">
-            💡 Klik tombol di atas, lalu klik pada peta untuk menambahkan tempat. Marker dapat digeser.
-        </div>
+                    <div id="videoControls" style="display: none;">
+                        <div class="button-group">
+                            <button id="animateBtn">Mulai Animasi</button>
+                        </div>
+                        <div class="button-group">
+                            <button class="btn-record" id="recordBtn">Record Animation</button>
+                        </div>
+                        <div class="button-group">
+                            <button class="btn-download" id="downloadBtn" disabled>Export Video</button>
+                        </div>
+                        <div class="recording-indicator" id="recordingIndicator">
+                            ● Recording...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
 
         <!-- Version Number -->
-        <div class="section-divider"></div>
-        <div id="app-version" style="text-align: center; font-size: 12px; color: #888; margin-top: 15px;"></div>
-
-        <!-- Animation & Video Controls -->
-        <h2>Opsi Rekaman</h2>
-        <div class="form-group">
-            <label for="recordingQuality">Bitrate Video</label>
-            <select id="recordingQuality" class="styled-select">
-                <option value="20000000">20 Mbps</option>
-                <option value="25000000">25 Mbps</option>
-                <option value="30000000" selected>30 Mbps</option>
-                <option value="35000000">35 Mbps</option>
-                <option value="40000000">40 Mbps</option>
-                <option value="45000000">45 Mbps</option>
-                <option value="50000000">50 Mbps</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="recordingFps">Frame Rate:</label>
-            <select id="recordingFps" class="styled-select">
-                <option value="15">15 FPS</option>
-                <option value="30" selected>30 FPS</option>
-                <option value="60">60 FPS</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="recordingAspectRatio">Aspek Rasio:</label>
-            <select id="recordingAspectRatio" class="styled-select">
-                <option value="auto" selected>Otomatis (Ukuran Layar)</option>
-                <option value="16:9">16:9 (HD Video)</option>
-                <option value="1:1">1:1 (Persegi)</option>
-            </select>
-        </div>
-
-        <div id="videoControls" style="display: none;">
-            <div class="button-group">
-                <button id="animateBtn">Mulai Animasi</button>
-            </div>
-            <div class="button-group">
-                <button class="btn-record" id="recordBtn">Record Animation</button>
-            </div>
-            <div class="button-group">
-                <button class="btn-download" id="downloadBtn" disabled>Export Video</button>
-            </div>
-            <div class="recording-indicator" id="recordingIndicator">
-                ● Recording...
-            </div>
+        <div style="border-top: 1px solid #ddd; margin-top: 15px; padding-top: 15px;">
+            <div id="app-version" style="text-align: center; font-size: 12px; color: #888;"></div>
         </div>
     </div>
 
