@@ -23,6 +23,8 @@ let mediaRecorder = null; // Global media recorder instance
 let customIconUrl = null; // To store the custom uploaded icon
 let iconSize = 20; // Default icon size
 let iconRotation = 90; // Default rotation in degrees
+let iconAnimationEffect = 'none'; // Icon animation effect: 'none', 'sway', 'spin', 'bounce'
+let iconAnimationSpeed = 1.0; // Animation speed in seconds (base speed)
 
 // Autocomplete state
 let autocompleteTimeout = null;
@@ -317,6 +319,10 @@ function setupEventListeners() {
     document.getElementById('iconRotationSlider').addEventListener('input', handleIconRotationChange);
     document.getElementById('customIconUpload').addEventListener('change', handleCustomIconUpload);
 
+    // Icon animation listeners
+    document.getElementById('iconAnimationEffect').addEventListener('change', handleIconAnimationChange);
+    document.getElementById('iconAnimationSpeedSlider').addEventListener('input', handleIconAnimationSpeedChange);
+
     // Setup autocomplete for location search
     setupAutocompleteListeners();
 
@@ -514,20 +520,34 @@ function displayRoute(coordinates, startLat, startLon, endLat, endLon) {
 // ============================================
 function createCarIcon() {
     let html;
+    let animationClass = '';
+    
+    // Get animation class based on selected effect
+    if (iconAnimationEffect !== 'none') {
+        const animationDuration = iconAnimationSpeed;
+        animationClass = `icon-animation-${iconAnimationEffect}`;
+    }
     
     if (customIconUrl) {
         // Use custom uploaded image
+        const animationStyle = iconAnimationEffect !== 'none' 
+            ? `animation-duration: ${iconAnimationSpeed}s;` 
+            : '';
         html = `
             <img src="${customIconUrl}" style="
                 width: ${iconSize}px;
                 height: ${iconSize}px;
                 display: block;
                 transform: rotate(${iconRotation}deg);
-            " alt="Custom Icon">
+                ${animationStyle}
+            " class="${animationClass}" alt="Custom Icon">
         `;
     } else {
         // Use emoji icon - transparent background
         const fontSize = Math.max(12, iconSize - 8);
+        const animationStyle = iconAnimationEffect !== 'none' 
+            ? `animation-duration: ${iconAnimationSpeed}s;` 
+            : '';
         html = `
             <div style="
                 width: ${iconSize}px;
@@ -538,7 +558,8 @@ function createCarIcon() {
                 font-size: ${fontSize}px;
                 transform: rotate(${iconRotation}deg);
                 line-height: 1;
-            ">${selectedIcon}</div>
+                ${animationStyle}
+            " class="${animationClass}">${selectedIcon}</div>
         `;
     }
     
@@ -598,6 +619,29 @@ function handleIconRotationChange(e) {
     iconRotation = parseInt(e.target.value);
     document.getElementById('iconRotationValue').textContent = iconRotation + '°';
     console.log('Icon rotation changed to:', iconRotation);
+    
+    // Update existing marker if it exists
+    if (animatedMarker) {
+        updateMarkerIcon();
+    }
+}
+
+// Handle icon animation effect change
+function handleIconAnimationChange(e) {
+    iconAnimationEffect = e.target.value;
+    console.log('Icon animation effect changed to:', iconAnimationEffect);
+    
+    // Update existing marker if it exists
+    if (animatedMarker) {
+        updateMarkerIcon();
+    }
+}
+
+// Handle icon animation speed slider change
+function handleIconAnimationSpeedChange(e) {
+    iconAnimationSpeed = parseFloat(e.target.value);
+    document.getElementById('iconAnimationSpeedValue').textContent = iconAnimationSpeed.toFixed(1) + 's';
+    console.log('Icon animation speed changed to:', iconAnimationSpeed + 's');
     
     // Update existing marker if it exists
     if (animatedMarker) {

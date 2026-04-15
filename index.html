@@ -289,6 +289,41 @@
             line-height: 24px;
         }
 
+        /* Icon animation effects */
+        @keyframes sway {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-3deg); }
+            75% { transform: rotate(3deg); }
+        }
+
+        @keyframes spin-continuous {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .icon-animation-sway {
+            animation-name: sway;
+            animation-iteration-count: infinite;
+            animation-timing-function: ease-in-out;
+        }
+
+        .icon-animation-spin {
+            animation-name: spin-continuous;
+            animation-iteration-count: infinite;
+            animation-timing-function: linear;
+        }
+
+        .icon-animation-bounce {
+            animation-name: bounce;
+            animation-iteration-count: infinite;
+            animation-timing-function: ease-in-out;
+        }
+
         /* Autocomplete suggestions styling */
         .location-input-wrapper {
             position: relative;
@@ -494,6 +529,33 @@
             >
         </div>
 
+        <!-- Icon Animation Effect -->
+        <div class="form-group">
+            <label for="iconAnimationEffect">Efek Animasi Ikon</label>
+            <select id="iconAnimationEffect" class="styled-select">
+                <option value="none">Tidak Ada</option>
+                <option value="sway">🌊 Goyang</option>
+                <option value="spin">🔄 Berputar</option>
+                <option value="bounce">⬆️ Lompat</option>
+            </select>
+        </div>
+
+        <!-- Icon Animation Speed Slider -->
+        <div class="slider-group">
+            <label for="iconAnimationSpeedSlider">
+                Kecepatan Animasi Ikon
+                <span id="iconAnimationSpeedValue">1.0s</span>
+            </label>
+            <input 
+                type="range" 
+                id="iconAnimationSpeedSlider" 
+                min="0.5" 
+                max="3" 
+                step="0.1" 
+                value="1"
+            >
+        </div>
+
         <!-- Animation Speed Slider -->
         <div class="slider-group">
             <label for="speedSlider">
@@ -568,6 +630,6 @@
     <script src="https://cdn.jsdelivr.net/npm/leaflet-ant-path@1.1.2/dist/leaflet-ant-path.umd.min.js"></script>
 
     <!-- Main Application Script (with cache busting) -->
-    <script src="app.js?v=20260414_v7"></script>
+    <script src="app.js?v=20260415_v8"></script>
 </body>
 </html>
