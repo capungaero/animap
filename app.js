@@ -526,23 +526,18 @@ function createCarIcon() {
             " alt="Custom Icon">
         `;
     } else {
-        // Use emoji icon
+        // Use emoji icon - transparent background
         const fontSize = Math.max(12, iconSize - 8);
         html = `
             <div style="
                 width: ${iconSize}px;
                 height: ${iconSize}px;
-                background: #ff6600;
-                border: 2px solid #333;
-                border-radius: 6px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 font-size: ${fontSize}px;
-                color: white;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.4);
                 transform: rotate(${iconRotation}deg);
-                overflow: hidden;
+                line-height: 1;
             ">${selectedIcon}</div>
         `;
     }
