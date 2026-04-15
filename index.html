@@ -429,6 +429,100 @@
         .location-marker-popup button:hover {
             background: #c82333;
         }
+
+        /* Place selector modal styles */
+        .place-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .place-modal-overlay.active {
+            display: flex;
+        }
+
+        .place-modal {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .place-modal h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 18px;
+        }
+
+        .place-icons-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .place-icon-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            background: #f5f5f5;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 80px;
+        }
+
+        .place-icon-item:hover {
+            background: #e8f4ff;
+            border-color: #007bff;
+            transform: translateY(-2px);
+        }
+
+        .place-icon-item-icon {
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+
+        .place-icon-item-label {
+            font-size: 11px;
+            text-align: center;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .place-modal-close {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .place-modal-close button {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .place-modal-close button:hover {
+            background: #545b62;
+        }
     </style>
 </head>
 <body>
@@ -607,52 +701,10 @@
 
         <!-- Add Location/Place Menu -->
         <div class="section-divider"></div>
-        <h2>Tambah Tempat</h2>
-
-        <div class="form-group">
-            <label for="placeNameInput">Nama Tempat</label>
-            <input 
-                type="text" 
-                id="placeNameInput" 
-                placeholder="e.g., Rumah Sakit Umum"
-                autocomplete="off"
-            >
-        </div>
-
-        <div class="form-group">
-            <label for="placeIconSelector">Jenis Tempat</label>
-            <select id="placeIconSelector" class="styled-select">
-                <option value="hospital">🏥 Rumah Sakit</option>
-                <option value="school">🏫 Sekolah</option>
-                <option value="gas-station">⛽ Pom Bensin</option>
-                <option value="restaurant">🍽️ Restoran</option>
-                <option value="hotel">🏨 Hotel</option>
-                <option value="bank">🏦 Bank</option>
-                <option value="shopping">🛍️ Belanja/Mall</option>
-                <option value="park">🌳 Taman</option>
-                <option value="church">⛪ Gereja</option>
-                <option value="mosque">🕌 Masjid</option>
-                <option value="police">🚔 Polisi</option>
-                <option value="fire">🚒 Pemadam Kebakaran</option>
-                <option value="airport">✈️ Bandara</option>
-                <option value="train">🚂 Stasiun Kereta</option>
-                <option value="parking">🅿️ Parkir</option>
-                <option value="library">📚 Perpustakaan</option>
-                <option value="museum">🏛️ Museum</option>
-                <option value="stadium">🏟️ Stadion</option>
-                <option value="theater">🎭 Teater</option>
-                <option value="market">🏪 Pasar</option>
-                <option value="clinic">💊 Klinik</option>
-                <option value="pharmacy">💉 Apotek</option>
-                <option value="atm">🏧 ATM</option>
-            </select>
-        </div>
-
         <div class="button-group">
-            <button class="btn-primary" id="addPlaceBtn">Aktifkan Tambah Tempat</button>
-            <button class="btn-secondary" id="clearPlacesBtn">Hapus Semua</button>
+            <button class="btn-primary" id="addPlaceBtn" style="width: 100%;">+ Tambah Tempat</button>
         </div>
-
+        <button class="btn-secondary" id="clearPlacesBtn" style="width: 100%; margin-top: 8px;">Hapus Semua Tempat</button>
         <div id="placeStatusMessage" class="status-message"></div>
 
         <div style="padding: 8px; background: #e7f3ff; border-radius: 4px; font-size: 12px; color: #0066cc; margin-top: 10px;">
@@ -717,6 +769,17 @@
     <script src="https://cdn.jsdelivr.net/npm/leaflet-ant-path@1.1.2/dist/leaflet-ant-path.umd.min.js"></script>
 
     <!-- Main Application Script (with cache busting) -->
-    <script src="app.js?v=20260415_v10"></script>
+    <script src="app.js?v=20260415_v12"></script>
+
+    <!-- Place Selector Modal -->
+    <div id="placeModal" class="place-modal-overlay">
+        <div class="place-modal">
+            <div class="place-modal-close">
+                <h3>Pilih Jenis Tempat</h3>
+                <button id="closeModalBtn">Tutup</button>
+            </div>
+            <div class="place-icons-grid" id="placeIconsGrid"></div>
+        </div>
+    </div>
 </body>
 </html>

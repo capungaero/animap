@@ -287,55 +287,70 @@ function createPlaceMarker(lat, lon, placeName, placeType) {
     return marker;
 }
 
-function togglePlaceAddingMode() {
-    placeAddingMode = !placeAddingMode;
-    const btn = document.getElementById('addPlaceBtn');
-    const placeName = document.getElementById('placeNameInput').value.trim();
-    const placeType = document.getElementById('placeIconSelector').value;
-    
-    if (!placeName && placeAddingMode) {
-        showPlaceStatus('Mohon masukkan nama tempat', 'warning');
-        placeAddingMode = false;
-        return;
-    }
-    
-    if (placeAddingMode) {
-        placeAddingType = placeType;
-        btn.style.background = '#c82333';
-        btn.textContent = '❌ Batalkan';
-        showPlaceStatus(`✓ Mode tambah aktif. Klik peta untuk menempatkan "${placeName}"`, 'info');
-        map.on('click', handleMapClickForPlacing);
-    } else {
-        btn.style.background = '';
-        btn.textContent = 'Aktifkan Tambah Tempat';
-        showPlaceStatus('', 'success');
-        map.off('click', handleMapClickForPlacing);
-    }
+function openPlaceModal() {
+    const modal = document.getElementById('placeModal');
+    modal.classList.add('active');
 }
 
-function handleMapClickForPlacing(e) {
-    if (!placeAddingMode || !placeAddingType) return;
+function closePlaceModal() {
+    const modal = document.getElementById('placeModal');
+    modal.classList.remove('active');
+}
+
+function initializePlaceModal() {
+    const grid = document.getElementById('placeIconsGrid');
+    // Clear existing items
+    grid.innerHTML = '';
     
-    const lat = e.latlng.lat;
-    const lon = e.latlng.lng;
-    const placeName = document.getElementById('placeNameInput').value.trim();
+    // Create an item for each place type
+    Object.entries(placeIcons).forEach(([type, emoji]) => {
+        const item = document.createElement('div');
+        item.className = 'place-icon-item';
+        item.dataset.type = type;
+        
+        // Create display name (capitalize and replace hyphens with spaces)
+        const displayName = type
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+        
+        item.innerHTML = `
+            <div style="font-size: 2em; margin-bottom: 8px;">${emoji}</div>
+            <div style="font-size: 0.8em; text-align: center; word-break: break-word;">${displayName}</div>
+        `;
+        
+        item.addEventListener('click', () => handlePlaceIconClick(type));
+        grid.appendChild(item);
+    });
+}
+
+function handlePlaceIconClick(placeType) {
+    // Add draggable marker at map center
+    const center = map.getCenter();
+    const displayName = placeType
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
     
     try {
         // Create and add marker to map
-        const marker = createPlaceMarker(lat, lon, placeName, placeAddingType);
+        const marker = createPlaceMarker(center.lat, center.lng, displayName, placeType);
         marker.addTo(map);
         
         // Store marker info
         placeMarkers.push({
             marker: marker,
-            name: placeName,
-            lat: lat,
-            lon: lon,
-            type: placeAddingType
+            name: displayName,
+            lat: center.lat,
+            lon: center.lng,
+            type: placeType
         });
         
-        showPlaceStatus(`✓ "${placeName}" ditambahkan. Klik lagi untuk tambah lebih banyak atau batalkan.`, 'success');
-        console.log('Place marker added:', placeName, lat, lon);
+        showPlaceStatus(`✓ "${displayName}" ditambahkan. Drag marker untuk ubah posisi.`, 'success');
+        console.log('Place marker added:', displayName, center.lat, center.lng);
+        
+        // Close modal after placing
+        closePlaceModal();
     } catch (error) {
         console.error('Error adding place marker:', error);
         showPlaceStatus('Error: ' + error.message, 'error');
@@ -346,7 +361,6 @@ function removePlaceMarker(index) {
     if (index < 0 || index >= placeMarkers.length) return;
     
     const placeInfo = placeMarkers[index];
-    map.off('click', handleMapClickForPlacing);
     placeInfo.marker.removeFrom(map);
     
     // Recalculate indices in placeMarkers
@@ -371,14 +385,6 @@ function clearAllPlaceMarkers() {
         item.marker.removeFrom(map);
     });
     placeMarkers = [];
-    
-    // Cancel place adding mode
-    if (placeAddingMode) {
-        placeAddingMode = false;
-        document.getElementById('addPlaceBtn').style.background = '';
-        document.getElementById('addPlaceBtn').textContent = 'Aktifkan Tambah Tempat';
-        map.off('click', handleMapClickForPlacing);
-    }
     
     // Close any open popups
     map.closePopup();
@@ -536,7 +542,8 @@ function setupEventListeners() {
     document.getElementById('iconAnimationSpeedSlider').addEventListener('input', handleIconAnimationSpeedChange);
 
     // Place/Location markers listeners
-    document.getElementById('addPlaceBtn').addEventListener('click', togglePlaceAddingMode);
+    document.getElementById('addPlaceBtn').addEventListener('click', openPlaceModal);
+    document.getElementById('closeModalBtn').addEventListener('click', closePlaceModal);
     document.getElementById('clearPlacesBtn').addEventListener('click', clearAllPlaceMarkers);
 
     // Setup autocomplete for location search
@@ -545,6 +552,7 @@ function setupEventListeners() {
     // Set initial state on load
     updateRecordingAreaOverlay();
     setAppVersion(); // Set the version on load
+    initializePlaceModal(); // Populate modal with place icons
 }
 
 // ============================================
