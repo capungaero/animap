@@ -24,6 +24,175 @@ let customIconUrl = null; // To store the custom uploaded icon
 let iconSize = 20; // Default icon size
 let iconRotation = 90; // Default rotation in degrees
 
+// Autocomplete state
+let autocompleteTimeout = null;
+const AUTOCOMPLETE_DELAY = 300; // ms
+
+
+// ============================================
+// Autocomplete/Location Search
+// ============================================
+async function searchLocations(query) {
+    if (!query || query.trim().length < 2) {
+        return [];
+    }
+
+    try {
+        // Check if it's a coordinate format (latitude,longitude)
+        const coordRegex = /^-?\d+\.?\d*\s*,\s*-?\d+\.?\d*$/;
+        if (coordRegex.test(query.trim())) {
+            return []; // Let the coordinate parser handle it later
+        }
+
+        // Use Nominatim API for location search
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?` +
+            `q=${encodeURIComponent(query)}&` +
+            `format=json&` +
+            `limit=5&` +
+            `countrycodes=id` // Focus on Indonesia first
+        );
+
+        if (!response.ok) {
+            throw new Error('Search failed');
+        }
+
+        const results = await response.json();
+        
+        return results.map(result => ({
+            name: result.name,
+            display_name: result.display_name,
+            lat: parseFloat(result.lat),
+            lon: parseFloat(result.lon),
+            type: result.type,
+            address: result.address
+        }));
+    } catch (error) {
+        console.error('Location search error:', error);
+        return [];
+    }
+}
+
+function displaySuggestions(inputId, suggestions) {
+    const suggestionsContainer = document.getElementById(
+        inputId === 'startPoint' ? 'startSuggestions' : 'endSuggestions'
+    );
+
+    if (!suggestions || suggestions.length === 0) {
+        suggestionsContainer.classList.remove('active');
+        suggestionsContainer.innerHTML = '';
+        return;
+    }
+
+    suggestionsContainer.innerHTML = suggestions.map((suggestion, index) => `
+        <div class="suggestion-item" data-index="${index}" data-lat="${suggestion.lat}" data-lon="${suggestion.lon}">
+            <div class="suggestion-item-main">${escapeHtml(suggestion.name)}</div>
+            <div class="suggestion-item-sub">${escapeHtml(suggestion.display_name.split(',').slice(0, 2).join(','))}</div>
+        </div>
+    `).join('');
+
+    // Add click handlers to suggestion items
+    suggestionsContainer.querySelectorAll('.suggestion-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const lat = item.getAttribute('data-lat');
+            const lon = item.getAttribute('data-lon');
+            const name = item.querySelector('.suggestion-item-main').textContent;
+            
+            // Set the input value to "lat,lon" format
+            document.getElementById(inputId).value = `${lat},${lon}`;
+            
+            // Close suggestion dropdown
+            suggestionsContainer.classList.remove('active');
+            
+            // Show feedback
+            showStatus(`✓ ${name} dipilih (${lat.substring(0, 8)}, ${lon.substring(0, 8)})`, 'success');
+        });
+    });
+
+    suggestionsContainer.classList.add('active');
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function setupAutocompleteListeners() {
+    const startInput = document.getElementById('startPoint');
+    const endInput = document.getElementById('endPoint');
+    const startSuggestions = document.getElementById('startSuggestions');
+    const endSuggestions = document.getElementById('endSuggestions');
+
+    // Start point autocomplete
+    startInput.addEventListener('input', async (e) => {
+        clearTimeout(autocompleteTimeout);
+        const query = e.target.value;
+
+        if (query.length < 2) {
+            startSuggestions.classList.remove('active');
+            return;
+        }
+
+        // Show loading state
+        startSuggestions.innerHTML = '<div class="suggestion-loading">Searching...</div>';
+        startSuggestions.classList.add('active');
+
+        autocompleteTimeout = setTimeout(async () => {
+            try {
+                const suggestions = await searchLocations(query);
+                displaySuggestions('startPoint', suggestions);
+            } catch (error) {
+                console.error('Autocomplete error:', error);
+                startSuggestions.classList.remove('active');
+            }
+        }, AUTOCOMPLETE_DELAY);
+    });
+
+    // End point autocomplete
+    endInput.addEventListener('input', async (e) => {
+        clearTimeout(autocompleteTimeout);
+        const query = e.target.value;
+
+        if (query.length < 2) {
+            endSuggestions.classList.remove('active');
+            return;
+        }
+
+        // Show loading state
+        endSuggestions.innerHTML = '<div class="suggestion-loading">Searching...</div>';
+        endSuggestions.classList.add('active');
+
+        autocompleteTimeout = setTimeout(async () => {
+            try {
+                const suggestions = await searchLocations(query);
+                displaySuggestions('endPoint', suggestions);
+            } catch (error) {
+                console.error('Autocomplete error:', error);
+                endSuggestions.classList.remove('active');
+            }
+        }, AUTOCOMPLETE_DELAY);
+    });
+
+    // Close suggestions when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#startPoint') && !e.target.closest('#startSuggestions')) {
+            startSuggestions.classList.remove('active');
+        }
+        if (!e.target.closest('#endPoint') && !e.target.closest('#endSuggestions')) {
+            endSuggestions.classList.remove('active');
+        }
+    });
+
+    // Close suggestions on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            startSuggestions.classList.remove('active');
+            endSuggestions.classList.remove('active');
+        }
+    });
+}
+
 
 // ============================================
 // Version Control
@@ -147,6 +316,9 @@ function setupEventListeners() {
     document.getElementById('iconSizeSlider').addEventListener('input', handleIconSizeChange);
     document.getElementById('iconRotationSlider').addEventListener('input', handleIconRotationChange);
     document.getElementById('customIconUpload').addEventListener('change', handleCustomIconUpload);
+
+    // Setup autocomplete for location search
+    setupAutocompleteListeners();
 
     // Set initial state on load
     updateRecordingAreaOverlay();
