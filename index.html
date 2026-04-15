@@ -620,16 +620,6 @@
         </div>
 
         <div class="form-group">
-            <label for="placeCoordInput">Koordinat (Lat,Lon)</label>
-            <input 
-                type="text" 
-                id="placeCoordInput" 
-                placeholder="e.g., -6.2088,106.8456"
-                autocomplete="off"
-            >
-        </div>
-
-        <div class="form-group">
             <label for="placeIconSelector">Jenis Tempat</label>
             <select id="placeIconSelector" class="styled-select">
                 <option value="hospital">🏥 Rumah Sakit</option>
@@ -659,11 +649,15 @@
         </div>
 
         <div class="button-group">
-            <button class="btn-primary" id="addPlaceBtn">Tambah Tempat</button>
+            <button class="btn-primary" id="addPlaceBtn">Aktifkan Tambah Tempat</button>
             <button class="btn-secondary" id="clearPlacesBtn">Hapus Semua</button>
         </div>
 
         <div id="placeStatusMessage" class="status-message"></div>
+
+        <div style="padding: 8px; background: #e7f3ff; border-radius: 4px; font-size: 12px; color: #0066cc; margin-top: 10px;">
+            💡 Klik tombol di atas, lalu klik pada peta untuk menambahkan tempat. Marker dapat digeser.
+        </div>
 
         <!-- Version Number -->
         <div class="section-divider"></div>
@@ -723,6 +717,6 @@
     <script src="https://cdn.jsdelivr.net/npm/leaflet-ant-path@1.1.2/dist/leaflet-ant-path.umd.min.js"></script>
 
     <!-- Main Application Script (with cache busting) -->
-    <script src="app.js?v=20260415_v9"></script>
+    <script src="app.js?v=20260415_v10"></script>
 </body>
 </html>

@@ -28,6 +28,8 @@ let iconAnimationSpeed = 1.0; // Animation speed in seconds (base speed)
 
 // Place/Location markers
 let placeMarkers = []; // Array to store all location markers
+let placeAddingMode = false; // Flag to track if we're in place adding mode
+let placeAddingType = null; // Type of place being added
 
 // Place icon mapping
 const placeIcons = {
@@ -240,6 +242,7 @@ function createPlaceMarker(lat, lon, placeName, placeType) {
             justify-content: center;
             line-height: 1;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+            cursor: grab;
         ">${icon}</div>
     `;
     
@@ -249,7 +252,27 @@ function createPlaceMarker(lat, lon, placeName, placeType) {
             className: 'place-marker-icon',
             iconSize: [iconSize, iconSize],
             iconAnchor: [iconSize / 2, iconSize / 2],
-        })
+        }),
+        draggable: true
+    });
+    
+    // Handle marker drag
+    marker.on('dragend', function() {
+        const placeInfo = placeMarkers.find(p => p.marker === marker);
+        if (placeInfo) {
+            const newLat = marker.getLatLng().lat;
+            const newLon = marker.getLatLng().lng;
+            placeInfo.lat = newLat;
+            placeInfo.lon = newLon;
+            // Update popup
+            marker.setPopupContent(`
+                <div class="location-marker-popup">
+                    <strong>${escapeHtml(placeInfo.name)}</strong>
+                    <small>${newLat.toFixed(4)}, ${newLon.toFixed(4)}</small>
+                    <button onclick="removePlaceMarker(${placeMarkers.indexOf(placeInfo)})">Hapus</button>
+                </div>
+            `);
+        }
     });
     
     // Add popup with place info
@@ -257,40 +280,49 @@ function createPlaceMarker(lat, lon, placeName, placeType) {
         <div class="location-marker-popup">
             <strong>${escapeHtml(placeName)}</strong>
             <small>${lat.toFixed(4)}, ${lon.toFixed(4)}</small>
-            <button onclick="removePlaceMarker(${placeMarkers.length - 1})">Hapus</button>
+            <button onclick="removePlaceMarker(${placeMarkers.length})">Hapus</button>
         </div>
     `);
     
     return marker;
 }
 
-function addPlaceMarker() {
+function togglePlaceAddingMode() {
+    placeAddingMode = !placeAddingMode;
+    const btn = document.getElementById('addPlaceBtn');
     const placeName = document.getElementById('placeNameInput').value.trim();
-    const placeCoord = document.getElementById('placeCoordInput').value.trim();
     const placeType = document.getElementById('placeIconSelector').value;
     
-    if (!placeName) {
+    if (!placeName && placeAddingMode) {
         showPlaceStatus('Mohon masukkan nama tempat', 'warning');
+        placeAddingMode = false;
         return;
     }
     
-    if (!placeCoord) {
-        showPlaceStatus('Mohon masukkan koordinat (Lat,Lon)', 'warning');
-        return;
+    if (placeAddingMode) {
+        placeAddingType = placeType;
+        btn.style.background = '#c82333';
+        btn.textContent = '❌ Batalkan';
+        showPlaceStatus(`✓ Mode tambah aktif. Klik peta untuk menempatkan "${placeName}"`, 'info');
+        map.on('click', handleMapClickForPlacing);
+    } else {
+        btn.style.background = '';
+        btn.textContent = 'Aktifkan Tambah Tempat';
+        showPlaceStatus('', 'success');
+        map.off('click', handleMapClickForPlacing);
     }
+}
+
+function handleMapClickForPlacing(e) {
+    if (!placeAddingMode || !placeAddingType) return;
     
-    // Parse coordinates
-    const coords = parseCoordinates(placeCoord);
-    if (!coords) {
-        showPlaceStatus('Format koordinat tidak valid (gunakan: lat,lon)', 'error');
-        return;
-    }
-    
-    const [lat, lon] = coords;
+    const lat = e.latlng.lat;
+    const lon = e.latlng.lng;
+    const placeName = document.getElementById('placeNameInput').value.trim();
     
     try {
         // Create and add marker to map
-        const marker = createPlaceMarker(lat, lon, placeName, placeType);
+        const marker = createPlaceMarker(lat, lon, placeName, placeAddingType);
         marker.addTo(map);
         
         // Store marker info
@@ -299,15 +331,10 @@ function addPlaceMarker() {
             name: placeName,
             lat: lat,
             lon: lon,
-            type: placeType
+            type: placeAddingType
         });
         
-        // Clear inputs
-        document.getElementById('placeNameInput').value = '';
-        document.getElementById('placeCoordInput').value = '';
-        document.getElementById('placeIconSelector').value = 'hospital';
-        
-        showPlaceStatus(`✓ Tempat "${placeName}" berhasil ditambahkan!`, 'success');
+        showPlaceStatus(`✓ "${placeName}" ditambahkan. Klik lagi untuk tambah lebih banyak atau batalkan.`, 'success');
         console.log('Place marker added:', placeName, lat, lon);
     } catch (error) {
         console.error('Error adding place marker:', error);
@@ -319,11 +346,18 @@ function removePlaceMarker(index) {
     if (index < 0 || index >= placeMarkers.length) return;
     
     const placeInfo = placeMarkers[index];
+    map.off('click', handleMapClickForPlacing);
     placeInfo.marker.removeFrom(map);
+    
+    // Recalculate indices in placeMarkers
+    const name = placeInfo.name;
     placeMarkers.splice(index, 1);
     
-    showPlaceStatus(`✓ Tempat "${placeInfo.name}" dihapus`, 'success');
-    console.log('Place marker removed:', placeInfo.name);
+    // Close any open popups
+    map.closePopup();
+    
+    showPlaceStatus(`✓ "${name}" dihapus`, 'success');
+    console.log('Place marker removed:', name);
 }
 
 function clearAllPlaceMarkers() {
@@ -338,19 +372,39 @@ function clearAllPlaceMarkers() {
     });
     placeMarkers = [];
     
+    // Cancel place adding mode
+    if (placeAddingMode) {
+        placeAddingMode = false;
+        document.getElementById('addPlaceBtn').style.background = '';
+        document.getElementById('addPlaceBtn').textContent = 'Aktifkan Tambah Tempat';
+        map.off('click', handleMapClickForPlacing);
+    }
+    
+    // Close any open popups
+    map.closePopup();
+    
     showPlaceStatus(`✓ ${count} tempat berhasil dihapus`, 'success');
     console.log('All place markers cleared');
 }
 
 function showPlaceStatus(message, type) {
     const statusElement = document.getElementById('placeStatusMessage');
+    if (!message) {
+        statusElement.className = 'status-message';
+        statusElement.textContent = '';
+        return;
+    }
+    
     statusElement.textContent = message;
     statusElement.className = `status-message ${type}`;
     
     // Auto clear status after 4 seconds
-    setTimeout(() => {
-        statusElement.className = 'status-message';
-    }, 4000);
+    if (type === 'success') {
+        setTimeout(() => {
+            statusElement.className = 'status-message';
+            statusElement.textContent = '';
+        }, 4000);
+    }
 }
 
 
@@ -482,13 +536,8 @@ function setupEventListeners() {
     document.getElementById('iconAnimationSpeedSlider').addEventListener('input', handleIconAnimationSpeedChange);
 
     // Place/Location markers listeners
-    document.getElementById('addPlaceBtn').addEventListener('click', addPlaceMarker);
+    document.getElementById('addPlaceBtn').addEventListener('click', togglePlaceAddingMode);
     document.getElementById('clearPlacesBtn').addEventListener('click', clearAllPlaceMarkers);
-    document.getElementById('placeCoordInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            addPlaceMarker();
-        }
-    });
 
     // Setup autocomplete for location search
     setupAutocompleteListeners();
