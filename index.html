@@ -32,24 +32,17 @@
         }
 
         .control-panel {
-            position: fixed;
+            position: relative;
             background: white;
             padding: 20px;
             border-radius: 0;
             box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-            z-index: 999;
+            z-index: 1000;
             min-width: 350px;
             max-width: 350px;
             height: 100vh;
             overflow-y: auto;
-            left: 0;
-            top: 0;
-            display: none;
-            flex-direction: column;
-        }
-
-        .control-panel.active {
-            display: flex;
+            order: -1;
         }
 
         .control-panel h2 {
@@ -530,150 +523,11 @@
         .place-modal-close button:hover {
             background: #545b62;
         }
-
-        /* Toggle Button */
-        .sidebar-toggle {
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            z-index: 1001;
-            background: #007bff;
-            border: none;
-            color: white;
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s;
-        }
-
-        .sidebar-toggle:hover {
-            background: #0056b3;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-
-        /* Icon Bar (Top Center) */
-        .icon-bar {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1001;
-            background: white;
-            border-radius: 50px;
-            padding: 10px 15px;
-            display: flex;
-            gap: 15px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-            border: 1px solid #e0e0e0;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .icon-bar.active {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .icon-button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 24px;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            transition: all 0.2s;
-            padding: 0;
-        }
-
-        .icon-button:hover {
-            background: #f0f0f0;
-            transform: scale(1.1);
-        }
-
-        .icon-button.active {
-            background: #e8f4ff;
-            color: #007bff;
-        }
-
-        /* Generic Modal Styles */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal {
-            background: white;
-            border-radius: 8px;
-            padding: 25px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .modal h3 {
-            margin: 0 0 20px 0;
-            color: #333;
-            font-size: 20px;
-        }
-
-        .modal .form-group {
-            margin-bottom: 15px;
-        }
-
-        .modal .button-group {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .modal .btn-primary {
-            flex: 1;
-        }
-
-        .modal .btn-secondary {
-            flex: 1;
-        }
     </style>
 </head>
 <body>
     <div id="map">
         <div id="recording-area-overlay"></div>
-        
-        <!-- Sidebar Toggle Button -->
-        <button class="sidebar-toggle" id="sidebarToggle" title="Toggle menu">☰</button>
-        
-        <!-- Icon Bar (Top Center) -->
-        <div class="icon-bar" id="iconBar">
-            <button class="icon-button" id="coordinatesBtn" title="Koordinat">📍</button>
-            <button class="icon-button" id="placesBtn" title="Tambah Tempat">➕</button>
-            <button class="icon-button" id="settingsBtn" title="Pengaturan">⚙️</button>
-            <button class="icon-button" id="recordBtn" title="Rekam">🎬</button>
-        </div>
     </div>
 
     <div class="control-panel">
@@ -915,7 +769,7 @@
     <script src="https://cdn.jsdelivr.net/npm/leaflet-ant-path@1.1.2/dist/leaflet-ant-path.umd.min.js"></script>
 
     <!-- Main Application Script (with cache busting) -->
-    <script src="app.js?v=20260415_v13"></script>
+    <script src="app.js?v=20260415_v12"></script>
 
     <!-- Place Selector Modal -->
     <div id="placeModal" class="place-modal-overlay">
@@ -925,183 +779,6 @@
                 <button id="closeModalBtn">Tutup</button>
             </div>
             <div class="place-icons-grid" id="placeIconsGrid"></div>
-        </div>
-    </div>
-
-    <!-- Coordinates Modal -->
-    <div id="coordinatesModal" class="modal-overlay">
-        <div class="modal">
-            <h3>📍 Pengaturan Rute</h3>
-            
-            <div class="form-group">
-                <label for="coordinatesStartPoint">Titik Awal (Start)</label>
-                <div class="location-input-wrapper">
-                    <input 
-                        type="text" 
-                        id="coordinatesStartPoint" 
-                        placeholder="e.g., -6.2088,106.8456 atau ketik nama kota"
-                        autocomplete="off"
-                    >
-                    <div class="autocomplete-suggestions" id="coordinatesStartSuggestions"></div>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="coordinatesEndPoint">Titik Tujuan (Destination)</label>
-                <div class="location-input-wrapper">
-                    <input 
-                        type="text" 
-                        id="coordinatesEndPoint" 
-                        placeholder="e.g., -6.1751,106.8291 atau ketik nama kota"
-                        autocomplete="off"
-                    >
-                    <div class="autocomplete-suggestions" id="coordinatesEndSuggestions"></div>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="coordinatesIconSelector">Icon untuk Animasi</label>
-                <select id="coordinatesIconSelector">
-                    <option value="🚗">🚗 Mobil Merah</option>
-                    <option value="🚕">🚕 Taxi Kuning</option>
-                    <option value="🚙">🚙 SUV</option>
-                    <option value="🚌">🚌 Bus</option>
-                    <option value="🚎">🚎 Bus Hijau</option>
-                    <option value="🚐">🚐 Minibus</option>
-                    <option value="🚚">🚚 Truk</option>
-                    <option value="🚛">🚛 Truk Besar</option>
-                    <option value="🚜">🚜 Traktor</option>
-                    <option value="🏎️">🏎️ Race Car</option>
-                    <option value="🚓">🚓 Polisi</option>
-                    <option value="🚑">🚑 Ambulans</option>
-                    <option value="🚒">🚒 Fire Truck</option>
-                    <option value="🛵">🛵 Motor</option>
-                    <option value="🏍️">🏍️ Motorcycle</option>
-                    <option value="🚲">🚲 Sepeda</option>
-                    <option value="🛴">🛴 Skateboard</option>
-                    <option value="✈️">✈️ Pesawat</option>
-                    <option value="🚁">🚁 Helikopter</option>
-                    <option value="🚂">🚂 Kereta</option>
-                    <option value="🚊">🚊 Monorail</option>
-                    <option value="🚇">🚇 Subway</option>
-                    <option value="🚝">🚝 Cable Car</option>
-                </select>
-            </div>
-
-            <div class="button-group">
-                <button class="btn-primary" id="coordinatesGenerateBtn">Generate Route</button>
-                <button class="btn-secondary" id="coordinatesClearBtn">Clear</button>
-            </div>
-
-            <div class="form-group">
-                <div class="status-message" id="coordinatesStatusMessage"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="modal-overlay">
-        <div class="modal">
-            <h3>⚙️ Pengaturan</h3>
-
-            <!-- Animation Speed -->
-            <div class="form-group">
-                <label for="settingsSpeedSlider">Kecepatan Animasi: <span id="settingsSpeedValue">1.0x</span></label>
-                <input type="range" id="settingsSpeedSlider" min="0.1" max="3" step="0.1" value="1" 
-                    style="width: 100%; cursor: pointer;">
-            </div>
-
-            <!-- Animation Effect -->
-            <div class="form-group">
-                <label for="settingsAnimationEffect">Efek Animasi Icon</label>
-                <select id="settingsAnimationEffect">
-                    <option value="none">Tidak Ada</option>
-                    <option value="sway">Bergoyang (Sway)</option>
-                    <option value="spin">Berputar (Spin)</option>
-                    <option value="bounce">Lompat (Bounce)</option>
-                </select>
-            </div>
-
-            <!-- Animation Speed Control -->
-            <div class="form-group">
-                <label for="settingsAnimationSpeedSlider">Kecepatan Efek: <span id="settingsAnimationSpeedValue">1s</span></label>
-                <input type="range" id="settingsAnimationSpeedSlider" min="0.3" max="3" step="0.1" value="1" 
-                    style="width: 100%; cursor: pointer;">
-            </div>
-
-            <!-- Recording Aspect Ratio -->
-            <div class="form-group">
-                <label for="settingsRecordingAspectRatio">Aspek Rasio Rekaman</label>
-                <select id="settingsRecordingAspectRatio">
-                    <option value="auto" selected>Otomatis (Ukuran Layar)</option>
-                    <option value="16:9">16:9 (HD Video)</option>
-                    <option value="1:1">1:1 (Persegi)</option>
-                </select>
-            </div>
-
-            <!-- Map Style -->
-            <div class="form-group">
-                <label for="settingsMapStyle">Map Style</label>
-                <select id="settingsMapStyle">
-                    <option value="cartodb-positron">CartoDB Positron (Default)</option>
-                    <option value="cartodb-voyager">CartoDB Voyager</option>
-                    <option value="osm">OpenStreetMap</option>
-                    <option value="satellite">Satellite</option>
-                </select>
-            </div>
-
-            <div class="button-group">
-                <button class="btn-secondary" id="settingsCloseBtn">Tutup</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Record Modal -->
-    <div id="recordModal" class="modal-overlay">
-        <div class="modal">
-            <h3>🎬 Rekam Animasi</h3>
-
-            <!-- Recording Controls -->
-            <div class="button-group">
-                <button class="btn-record" id="recordModalRecordBtn" style="flex: 1; padding: 12px; background: #dc3545; color: white; border-radius: 4px; font-weight: 600; cursor: pointer;">Record Animation</button>
-            </div>
-
-            <div id="recordingIndicator" style="display: none; text-align: center; color: #dc3545; font-weight: bold; margin: 15px 0;">
-                ● Recording...
-            </div>
-
-            <!-- Recording Settings -->
-            <div class="form-group">
-                <label for="recordModalQuality">Bitrate Video</label>
-                <select id="recordModalQuality" class="styled-select">
-                    <option value="20000000">20 Mbps</option>
-                    <option value="25000000">25 Mbps</option>
-                    <option value="30000000" selected>30 Mbps</option>
-                    <option value="35000000">35 Mbps</option>
-                    <option value="40000000">40 Mbps</option>
-                    <option value="45000000">45 Mbps</option>
-                    <option value="50000000">50 Mbps</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="recordModalFps">Frame Rate</label>
-                <select id="recordModalFps" class="styled-select">
-                    <option value="15">15 FPS</option>
-                    <option value="30" selected>30 FPS</option>
-                    <option value="60">60 FPS</option>
-                </select>
-            </div>
-
-            <!-- Download Button -->
-            <div class="button-group">
-                <button class="btn-download" id="recordModalDownloadBtn" disabled 
-                    style="flex: 1; padding: 12px; background: #28a745; color: white; border-radius: 4px; font-weight: 600; cursor: pointer;">Export Video</button>
-            </div>
-
-            <div class="button-group">
-                <button class="btn-secondary" id="recordCloseBtn">Tutup</button>
-            </div>
         </div>
     </div>
 </body>
