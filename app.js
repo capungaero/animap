@@ -23,13 +23,55 @@ let mediaRecorder = null; // Global media recorder instance
 let customIconUrl = null; // To store the custom uploaded icon
 let iconSize = 20; // Default icon size
 let iconRotation = 90; // Default rotation in degrees
-let iconAnimationEffect = 'none'; // Icon animation effect: 'none', 'sway', 'spin', 'bounce'
+let iconAnimationEffect = 'none'; // Icon animation effect: 'none', 'sway', 'spin', 'bounce', 'pulse', 'float', 'wiggle'
 let iconAnimationSpeed = 1.0; // Animation speed in seconds (base speed)
+let isDarkMode = false; // Track dark mode state
 
 // Place/Location markers
 let placeMarkers = []; // Array to store all location markers
 let placeAddingMode = false; // Flag to track if we're in place adding mode
 let placeAddingType = null; // Type of place being added
+
+// ============================================
+// Theme/Dark Mode Functions
+// ============================================
+function initTheme() {
+    // Check if dark mode preference is saved in localStorage
+    const savedTheme = localStorage.getItem('theme-preference');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    isDarkMode = savedTheme ? savedTheme === 'dark' : prefersDark;
+
+    // Apply theme on page load
+    applyTheme(isDarkMode);
+}
+
+function applyTheme(isDark) {
+    isDarkMode = isDark;
+    const root = document.documentElement;
+    const toggleBtn = document.getElementById('darkModeToggle');
+
+    if (isDark) {
+        root.classList.add('dark-mode');
+        if (toggleBtn) {
+            toggleBtn.textContent = '☀️ Light';
+            toggleBtn.classList.add('active');
+        }
+    } else {
+        root.classList.remove('dark-mode');
+        if (toggleBtn) {
+            toggleBtn.textContent = '🌙 Dark';
+            toggleBtn.classList.remove('active');
+        }
+    }
+
+    // Save preference to localStorage
+    localStorage.setItem('theme-preference', isDark ? 'dark' : 'light');
+}
+
+function toggleDarkMode() {
+    applyTheme(!isDarkMode);
+}
 
 // Place icon mapping
 const placeIcons = {
@@ -545,6 +587,9 @@ function setupEventListeners() {
     document.getElementById('addPlaceBtn').addEventListener('click', openPlaceModal);
     document.getElementById('closeModalBtn').addEventListener('click', closePlaceModal);
     document.getElementById('clearPlacesBtn').addEventListener('click', clearAllPlaceMarkers);
+
+    // Dark mode toggle listener
+    document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
 
     // Setup autocomplete for location search
     setupAutocompleteListeners();
@@ -1400,6 +1445,7 @@ function showStatus(message, type = 'info') {
 // ============================================
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Page loaded, initializing app...');
+    initTheme(); // Initialize theme from localStorage
     initializeMap();
     setupEventListeners();
 
