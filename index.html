@@ -19,8 +19,8 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f0f0f0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             display: flex;
             height: 100vh;
         }
@@ -29,20 +29,23 @@
             height: 100vh;
             width: 100%;
             flex: 1;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
         }
 
         .control-panel {
             position: relative;
-            background: white;
-            padding: 20px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafb 100%);
+            padding: 0;
             border-radius: 0;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
             z-index: 1000;
             min-width: 350px;
             max-width: 350px;
             height: 100vh;
             overflow-y: auto;
             order: -1;
+            display: flex;
+            flex-direction: column;
         }
 
         .control-panel h2 {
@@ -55,54 +58,68 @@
         .menu-nav {
             display: flex;
             flex-direction: column;
-            gap: 0;
+            gap: 8px;
             margin-bottom: 0;
+            padding: 16px;
+            flex: 1;
         }
 
         .menu-item {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-bottom: none;
-            transition: all 0.3s ease;
+            background: white;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        .menu-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+            transform: translateY(-2px);
         }
 
         .menu-item:last-child {
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: none;
         }
 
         .menu-item-header {
             display: flex;
             align-items: center;
             justify-content: flex-start;
-            gap: 10px;
-            padding: 12px 15px;
-            background: #f8f9fa;
+            gap: 12px;
+            padding: 14px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             cursor: pointer;
             user-select: none;
             border: none;
             width: 100%;
             font-size: 14px;
             font-weight: 600;
-            color: #333;
-            transition: all 0.3s ease;
+            color: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .menu-item-header:hover {
-            background: #e9ecef;
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            letter-spacing: 0.3px;
         }
 
         .menu-item-header.active {
-            background: #007bff;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             color: white;
         }
 
         .menu-item-icon {
-            font-size: 16px;
-            min-width: 20px;
+            font-size: 18px;
+            min-width: 22px;
+            display: flex;
+            align-items: center;
         }
 
         .menu-item-header span:nth-child(2) {
             flex: 1;
+            font-weight: 600;
+            letter-spacing: 0.2px;
         }
 
         .menu-item-chevron {
@@ -120,162 +137,226 @@
             max-height: 0;
             overflow: hidden;
             opacity: 0;
-            transition: all 0.3s ease;
-            border-bottom: 1px solid #dee2e6;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .menu-item-content.active {
             max-height: 1000px;
             opacity: 1;
-            padding: 15px;
-            background: white;
+            padding: 16px;
+            background: #fafbfc;
         }
 
         .menu-divider {
             height: 6px;
             background: #f0f0f0;
-            border: 1px solid #dee2e6;
+            border: none;
             margin: 0;
         }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 14px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 5px;
-            color: #555;
-            font-weight: 500;
-            font-size: 14px;
+            margin-bottom: 6px;
+            color: #4a5568;
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
         }
 
         .form-group input {
             width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 10px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
             font-size: 14px;
+            background: white;
+            transition: all 0.3s ease;
         }
 
         .form-group input:focus {
             outline: none;
-            border-color: #007bff;
-            box-shadow: 0 0 5px rgba(0,123,255,0.3);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: #f8fafc;
         }
 
         .button-group {
             display: flex;
             gap: 10px;
-            margin-top: 15px;
+            margin-top: 14px;
         }
 
         button {
             flex: 1;
-            padding: 10px;
+            padding: 11px 14px;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            letter-spacing: 0.3px;
         }
 
         .btn-primary {
-            background: #007bff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
 
         .btn-primary:hover {
-            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
         }
 
         .btn-primary:disabled {
-            background: #ccc;
+            background: #cbd5e0;
             cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
         }
 
         .btn-secondary {
-            background: #6c757d;
-            color: white;
+            background: #e2e8f0;
+            color: #2d3748;
         }
 
         .btn-secondary:hover {
-            background: #545b62;
+            background: #cbd5e0;
+            transform: translateY(-2px);
         }
 
         .status-message {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 4px;
+            margin-top: 12px;
+            padding: 12px 14px;
+            border-radius: 8px;
             font-size: 13px;
             display: none;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            border-left: 4px solid transparent;
         }
 
         .status-message.info {
-            background: #e7f3ff;
-            color: #0066cc;
+            background: rgba(226, 238, 254, 0.8);
+            color: #2c5aa0;
+            border-left-color: #3b82f6;
             display: block;
         }
 
         .status-message.success {
-            background: #d4edda;
-            color: #155724;
+            background: rgba(220, 252, 231, 0.8);
+            color: #22543d;
+            border-left-color: #10b981;
             display: block;
         }
 
         .status-message.error {
-            background: #f8d7da;
-            color: #721c24;
+            background: rgba(254, 226, 226, 0.8);
+            color: #742a2a;
+            border-left-color: #ef4444;
             display: block;
         }
 
         .status-message.warning {
-            background: #fff3cd;
-            color: #856404;
+            background: rgba(254, 243, 205, 0.8);
+            color: #78350f;
+            border-left-color: #f59e0b;
             display: block;
         }
 
         /* Style selector section */
         .section-divider {
-            border-top: 1px solid #ddd;
-            margin: 15px 0;
+            border-top: 1px solid #e2e8f0;
+            margin: 14px 0;
         }
 
         .form-group select {
             width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 10px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
             font-size: 14px;
+            background: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
         }
 
         .form-group select:focus {
             outline: none;
-            border-color: #007bff;
-            box-shadow: 0 0 5px rgba(0,123,255,0.3);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: #f8fafc;
         }
 
         .slider-group {
-            margin: 15px 0;
+            margin: 14px 0;
+            padding: 12px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 0.1);
+            border-radius: 8px;
         }
 
         .slider-group label {
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
-            color: #555;
-            font-weight: 500;
-            font-size: 14px;
+            color: #4a5568;
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.3px;
         }
 
         .slider-group input[type="range"] {
             width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e2e8f0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .slider-group input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+        }
+
+        .slider-group input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .slider-group input[type="range"]::-moz-range-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
         }
 
         /* Video controls section */
         .video-controls {
             display: none !important;
+            padding: 12px 0;
         }
 
         .video-controls.active {
@@ -283,49 +364,64 @@
         }
 
         .btn-record {
-            background: #dc3545;
+            background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
         }
 
         .btn-record:hover {
-            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(245, 87, 108, 0.5);
         }
 
         .btn-success {
-            background: #28a745;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
         }
 
         .btn-success:hover {
-            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5);
         }
 
         .btn-success:disabled {
-            background: #ccc;
+            background: #cbd5e0;
             cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
         }
 
         .btn-download {
-            background: #17a2b8;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
         }
 
         .btn-download:hover {
-            background: #138496;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
         }
 
         .btn-download:disabled {
-            background: #ccc;
+            background: #cbd5e0;
             cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
         }
 
         .recording-indicator {
             display: none;
-            margin-top: 10px;
-            padding: 8px;
-            background: #ffe6e6;
-            color: #cc0000;
-            border-radius: 4px;
+            margin-top: 12px;
+            padding: 12px 14px;
+            background: linear-gradient(135deg, rgba(245, 87, 108, 0.1) 0%, rgba(240, 147, 251, 0.1) 100%);
+            color: #f5576c;
+            border-radius: 8px;
             font-weight: 600;
             text-align: center;
             font-size: 13px;
+            border-left: 4px solid #f5576c;
+            letter-spacing: 0.5px;
         }
 
         .recording-indicator.active {
@@ -342,7 +438,7 @@
             display: inline-block;
             width: 14px;
             height: 14px;
-            border: 2px solid #007bff;
+            border: 2px solid #667eea;
             border-top: 2px solid transparent;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
@@ -366,7 +462,7 @@
         }
 
         .animated-icon {
-            font-size: 20px; /* Ukuran emoji */
+            font-size: 20px;
             width: 24px;
             height: 24px;
             display: flex;
@@ -422,14 +518,14 @@
             left: 0;
             right: 0;
             background: white;
-            border: 1px solid #ddd;
+            border: 2px solid #e2e8f0;
             border-top: none;
-            border-radius: 0 0 4px 4px;
+            border-radius: 0 0 8px 8px;
             max-height: 200px;
             overflow-y: auto;
             z-index: 1001;
             display: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
         }
 
         .autocomplete-suggestions.active {
@@ -437,16 +533,18 @@
         }
 
         .suggestion-item {
-            padding: 10px 12px;
+            padding: 12px 14px;
             cursor: pointer;
             border-bottom: 1px solid #f0f0f0;
             font-size: 13px;
             color: #333;
-            transition: background 0.2s;
+            transition: all 0.2s;
+            background: white;
         }
 
         .suggestion-item:hover {
-            background: #f5f5f5;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(240, 147, 251, 0.05) 100%);
+            padding-left: 18px;
         }
 
         .suggestion-item:last-child {
@@ -454,20 +552,21 @@
         }
 
         .suggestion-item-main {
-            font-weight: 500;
-            color: #007bff;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 2px;
         }
 
         .suggestion-item-sub {
             font-size: 12px;
-            color: #999;
+            color: #a0aec0;
             margin-top: 2px;
         }
 
         .suggestion-loading {
-            padding: 10px 12px;
+            padding: 12px 14px;
             font-size: 13px;
-            color: #999;
+            color: #a0aec0;
             text-align: center;
         }
 
@@ -477,11 +576,11 @@
             left: 350px;
             width: calc(100% - 350px);
             height: 100%;
-            border: 3px dashed rgba(220, 53, 69, 0.7);
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
+            border: 3px dashed rgba(245, 87, 108, 0.7);
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3);
             z-index: 999;
             pointer-events: none;
-            display: none; /* Hidden by default */
+            display: none;
         }
 
         /* Location marker styles */
@@ -493,28 +592,33 @@
         .location-marker-popup strong {
             display: block;
             font-weight: 600;
-            margin-bottom: 3px;
+            margin-bottom: 4px;
+            color: #2d3748;
         }
 
         .location-marker-popup small {
-            color: #666;
+            color: #718096;
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 6px;
+            font-size: 12px;
         }
 
         .location-marker-popup button {
-            padding: 4px 8px;
+            padding: 6px 10px;
             font-size: 11px;
-            margin-top: 3px;
-            background: #dc3545;
+            margin-top: 6px;
+            background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
             color: white;
             border: none;
-            border-radius: 3px;
+            border-radius: 6px;
             cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
 
         .location-marker-popup button:hover {
-            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
         }
 
         /* Place selector modal styles */
@@ -529,6 +633,7 @@
             z-index: 2000;
             align-items: center;
             justify-content: center;
+            backdrop-filter: blur(4px);
         }
 
         .place-modal-overlay.active {
@@ -537,25 +642,39 @@
 
         .place-modal {
             background: white;
-            border-radius: 8px;
-            padding: 20px;
+            border-radius: 16px;
+            padding: 24px;
             max-width: 500px;
             width: 90%;
             max-height: 80vh;
             overflow-y: auto;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .place-modal h3 {
-            margin: 0 0 15px 0;
-            color: #333;
+            margin: 0 0 18px 0;
+            color: #2d3748;
             font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
         }
 
         .place-icons-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
+            gap: 12px;
         }
 
         .place-icon-item {
@@ -563,52 +682,67 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 12px;
-            background: #f5f5f5;
+            padding: 14px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 0.1);
             border: 2px solid transparent;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.2s;
-            min-height: 80px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 90px;
         }
 
         .place-icon-item:hover {
-            background: #e8f4ff;
-            border-color: #007bff;
-            transform: translateY(-2px);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
         }
 
         .place-icon-item-icon {
-            font-size: 32px;
-            margin-bottom: 5px;
+            font-size: 36px;
+            margin-bottom: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .place-icon-item:hover .place-icon-item-icon {
+            transform: scale(1.1);
+            filter: brightness(0);
         }
 
         .place-icon-item-label {
             font-size: 11px;
             text-align: center;
-            color: #555;
-            font-weight: 500;
+            color: #4a5568;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .place-icon-item:hover .place-icon-item-label {
+            color: white;
         }
 
         .place-modal-close {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
         .place-modal-close button {
-            background: #6c757d;
-            color: white;
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
+            color: #2d3748;
             border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
+            padding: 8px 14px;
+            border-radius: 8px;
             font-size: 13px;
             cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
 
         .place-modal-close button:hover {
-            background: #545b62;
+            background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%);
+            transform: translateY(-2px);
         }
 
         /* Popup Submenu */
@@ -618,15 +752,15 @@
             left: 0;
             right: 0;
             background: white;
-            border: 1px solid #ddd;
+            border: 2px solid #e2e8f0;
             border-top: none;
-            border-radius: 0 0 4px 4px;
+            border-radius: 0 0 8px 8px;
             max-height: 0;
             overflow: hidden;
             opacity: 0;
             transition: all 0.3s ease;
             z-index: 1001;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
         }
 
         .submenu-popup.active {
@@ -635,16 +769,20 @@
         }
 
         .submenu-item {
-            padding: 8px 12px;
+            padding: 10px 14px;
             cursor: pointer;
             border-bottom: 1px solid #f0f0f0;
             font-size: 13px;
-            color: #333;
-            transition: background 0.2s;
+            color: #4a5568;
+            transition: all 0.2s;
+            background: white;
+            font-weight: 500;
         }
 
         .submenu-item:hover {
-            background: #f5f5f5;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(240, 147, 251, 0.08) 100%);
+            padding-left: 18px;
+            color: #667eea;
         }
 
         .submenu-item:last-child {
@@ -655,13 +793,41 @@
         .quick-actions {
             display: flex;
             gap: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 14px;
         }
 
         .quick-actions button {
             flex: 1;
-            padding: 8px 10px;
+            padding: 9px 10px;
             font-size: 12px;
+        }
+
+        /* Version footer */
+        #app-version {
+            text-align: center;
+            font-size: 12px;
+            color: #a0aec0;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        /* Scrollbar styling */
+        .control-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .control-panel::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .control-panel::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #cbd5e0 0%, #a0aec0 100%);
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+
+        .control-panel::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #a0aec0 0%, #718096 100%);
         }
     </style>
 </head>
@@ -684,9 +850,9 @@
                     <div class="form-group">
                         <label for="startPoint">Titik Awal (Start)</label>
                         <div class="location-input-wrapper">
-                            <input 
-                                type="text" 
-                                id="startPoint" 
+                            <input
+                                type="text"
+                                id="startPoint"
                                 placeholder="e.g., -6.2088,106.8456 atau ketik nama kota"
                                 autocomplete="off"
                             >
@@ -697,9 +863,9 @@
                     <div class="form-group">
                         <label for="endPoint">Titik Tujuan (Destination)</label>
                         <div class="location-input-wrapper">
-                            <input 
-                                type="text" 
-                                id="endPoint" 
+                            <input
+                                type="text"
+                                id="endPoint"
                                 placeholder="e.g., -6.1751,106.8291 atau ketik nama kota"
                                 autocomplete="off"
                             >
@@ -781,12 +947,12 @@
                             Ukuran Ikon
                             <span id="iconSizeValue">20px</span>
                         </label>
-                        <input 
-                            type="range" 
-                            id="iconSizeSlider" 
-                            min="16" 
-                            max="200" 
-                            step="1" 
+                        <input
+                            type="range"
+                            id="iconSizeSlider"
+                            min="16"
+                            max="200"
+                            step="1"
                             value="20"
                         >
                     </div>
@@ -796,12 +962,12 @@
                             Rotasi Ikon
                             <span id="iconRotationValue">90°</span>
                         </label>
-                        <input 
-                            type="range" 
-                            id="iconRotationSlider" 
-                            min="0" 
-                            max="360" 
-                            step="1" 
+                        <input
+                            type="range"
+                            id="iconRotationSlider"
+                            min="0"
+                            max="360"
+                            step="1"
                             value="90"
                         >
                     </div>
@@ -821,12 +987,12 @@
                             Kecepatan Animasi Ikon
                             <span id="iconAnimationSpeedValue">1.0s</span>
                         </label>
-                        <input 
-                            type="range" 
-                            id="iconAnimationSpeedSlider" 
-                            min="0.5" 
-                            max="3" 
-                            step="0.1" 
+                        <input
+                            type="range"
+                            id="iconAnimationSpeedSlider"
+                            min="0.5"
+                            max="3"
+                            step="0.1"
                             value="1"
                         >
                     </div>
@@ -836,12 +1002,12 @@
                             Animation Speed
                             <span id="speedValue">1.0x</span>
                         </label>
-                        <input 
-                            type="range" 
-                            id="speedSlider" 
-                            min="0.1" 
-                            max="3" 
-                            step="0.1" 
+                        <input
+                            type="range"
+                            id="speedSlider"
+                            min="0.1"
+                            max="3"
+                            step="0.1"
                             value="1"
                         >
                     </div>
@@ -862,7 +1028,7 @@
                     <button class="btn-secondary" id="clearPlacesBtn" style="width: 100%; margin-top: 8px;">Hapus Semua Tempat</button>
                     <div id="placeStatusMessage" class="status-message"></div>
 
-                    <div style="padding: 8px; background: #e7f3ff; border-radius: 4px; font-size: 12px; color: #0066cc; margin-top: 10px;">
+                    <div style="padding: 10px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(240, 147, 251, 0.08) 100%); border-radius: 8px; font-size: 12px; color: #4a5568; margin-top: 12px; border-left: 4px solid #667eea; font-weight: 500;">
                         💡 Klik tombol di atas, lalu klik pada peta untuk menambahkan tempat. Marker dapat digeser.
                     </div>
                 </div>
@@ -924,8 +1090,8 @@
         </nav>
 
         <!-- Version Number -->
-        <div style="border-top: 1px solid #ddd; margin-top: 15px; padding-top: 15px;">
-            <div id="app-version" style="text-align: center; font-size: 12px; color: #888;"></div>
+        <div style="border-top: 2px solid #e2e8f0; margin-top: auto; padding: 16px;">
+            <div id="app-version" style="text-align: center; font-size: 12px; color: #a0aec0;"></div>
         </div>
     </div>
 
